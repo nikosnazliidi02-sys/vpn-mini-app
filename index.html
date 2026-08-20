@@ -1,0 +1,1348 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>VPN App - Blue Theme</title>
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <style>
+        :root {
+            --bg-base: #060B14;
+            --bg-glow: #003b73;
+            --bg-card: #111A26;
+            --bg-card-highlight: #1A2636;
+            
+            --primary: #0088FF;
+            --primary-hover: #0077E6;
+            --primary-transparent: rgba(0, 136, 255, 0.15);
+            
+            --text-main: #FFFFFF;
+            --text-muted: #8E9BAE;
+            --text-dark: #000000;
+            
+            --danger: #FF4D4D;
+            --success: #00C853;
+            
+            --radius-xl: 24px;
+            --radius-lg: 18px;
+            --radius-md: 14px;
+            --radius-sm: 10px;
+            
+            --nav-height: 70px;
+            --safe-bottom: env(safe-area-inset-bottom, 0px);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Roboto', sans-serif;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        body {
+            background-color: var(--bg-base);
+            color: var(--text-main);
+            min-height: 100vh;
+            background-image: radial-gradient(circle at 50% 0%, var(--bg-glow) 0%, var(--bg-base) 60%);
+            background-attachment: fixed;
+            background-repeat: no-repeat;
+            overflow-x: hidden;
+        }
+
+        .view-container {
+            display: none;
+            padding: 16px 16px calc(var(--nav-height) + var(--safe-bottom) + 24px);
+            animation: fadeIn 0.3s ease;
+        }
+        .view-container.active { display: block; }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .header-top {
+            display: flex;
+            align-items: center;
+            margin-bottom: 24px;
+            padding-top: 8px;
+        }
+        .back-btn {
+            width: 40px; height: 40px;
+            border-radius: 50%;
+            background: var(--bg-card);
+            border: none; color: var(--text-main);
+            display: flex; align-items: center; justify-content: center;
+            cursor: pointer; margin-right: 12px;
+        }
+        .page-title {
+            background: var(--bg-card);
+            padding: 10px 20px;
+            border-radius: 100px;
+            font-size: 15px; font-weight: 700;
+        }
+
+        .card {
+            background: var(--bg-card);
+            border-radius: var(--radius-xl);
+            padding: 20px; margin-bottom: 16px;
+            position: relative; overflow: hidden;
+        }
+
+        .btn {
+            width: 100%; padding: 16px;
+            border-radius: var(--radius-lg);
+            font-size: 15px; font-weight: 700;
+            border: none; cursor: pointer;
+            display: flex; align-items: center; justify-content: center;
+            gap: 10px; transition: transform 0.1s, opacity 0.2s;
+        }
+        .btn:active { transform: scale(0.97); opacity: 0.9; }
+        
+        .btn-primary { background: var(--primary); color: var(--text-main); }
+        .btn-white { background: var(--text-main); color: var(--text-dark); }
+        .btn-dark { background: rgba(255,255,255,0.05); color: var(--text-main); }
+        .btn-outline { background: transparent; border: 1px solid var(--primary); color: var(--primary); }
+
+        /* --- HOME TAB --- */
+        .balance-section { text-align: center; margin-bottom: 24px; margin-top: 24px; }
+        .balance-amount { font-size: 36px; font-weight: 800; margin-bottom: 8px; }
+        .status-badge {
+            display: inline-flex; align-items: center; gap: 6px;
+            color: var(--danger); font-size: 13px; font-weight: 500; margin-bottom: 16px;
+        }
+        .pills-row { display: flex; justify-content: center; gap: 10px; margin-bottom: 30px; }
+        .pill { background: var(--bg-card); padding: 8px 16px; border-radius: 100px; font-size: 13px; font-weight: 600; }
+
+        .home-actions { display: flex; flex-direction: column; gap: 12px; margin-bottom: 24px; }
+        .home-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+        .grid-card {
+            background: var(--bg-card); border-radius: var(--radius-xl);
+            padding: 16px; height: 160px; position: relative; display: flex;
+            flex-direction: column; justify-content: space-between; overflow: hidden;
+            background-image: linear-gradient(180deg, rgba(0, 136, 255, 0.05) 0%, rgba(17, 26, 38, 1) 100%);
+        }
+        .grid-card h3 { font-size: 16px; font-weight: 800; z-index: 2; }
+        .grid-icon-wrapper {
+            position: absolute; bottom: -10px; right: -10px;
+            width: 100px; height: 100px; display: flex; align-items: center; justify-content: center;
+            opacity: 0.8; filter: drop-shadow(0 0 20px rgba(0,136,255,0.4));
+        }
+        .grid-btn {
+            width: 36px; height: 36px; background: rgba(255,255,255,0.1); border-radius: 50%;
+            display: flex; align-items: center; justify-content: center; z-index: 2; cursor: pointer;
+        }
+
+        /* --- SETUP FLOW SCREENS --- */
+        .setup-screen { text-align: center; padding-top: 10px; display: flex; flex-direction: column; min-height: 70vh;}
+        .setup-icon-box {
+            width: 80px; height: 80px; border-radius: 50%; background: rgba(255,255,255,0.05);
+            border: 1px solid rgba(255,255,255,0.1); display: flex; align-items: center; justify-content: center;
+            margin: 0 auto 20px; color: var(--text-main);
+        }
+        .setup-title { font-size: 24px; font-weight: 800; margin-bottom: 10px; }
+        .setup-desc { font-size: 14px; color: var(--text-muted); margin-bottom: 24px; line-height: 1.4; }
+
+        .device-option-card {
+            background: var(--bg-card); border: 2px solid transparent; border-radius: var(--radius-xl);
+            padding: 16px 20px; margin-bottom: 12px; display: flex; align-items: center; justify-content: space-between;
+            cursor: pointer; text-align: left; transition: 0.2s;
+        }
+        .device-option-card.active { border-color: var(--primary); background: rgba(0, 136, 255, 0.05); }
+        .device-option-title { font-size: 16px; font-weight: 700; }
+
+        .happ-box {
+            background: var(--bg-card); border: 2px solid var(--primary); border-radius: var(--radius-xl);
+            padding: 30px 20px; margin-bottom: 24px; text-align: center; position: relative; overflow: hidden;
+        }
+        .happ-title { font-size: 20px; font-weight: 900; letter-spacing: 1px; margin-bottom: 20px; }
+        .happ-phone-mock {
+            background: #000; border-radius: 30px; width: 140px; height: 160px; margin: 0 auto;
+            border: 4px solid #333; display: flex; align-items: center; justify-content: center; position: relative;
+        }
+        .happ-logo-badge { background: #222; padding: 12px 18px; border-radius: 12px; font-weight: 900; font-size: 22px; color: #fff; border: 1px solid #444; }
+        .happ-support-label {
+            position: absolute; bottom: 10px; left: 50%; transform: translateX(-50%);
+            background: rgba(0,0,0,0.8); border: 1px solid rgba(255,255,255,0.2); padding: 4px 12px;
+            border-radius: 100px; font-size: 11px; font-weight: 600; white-space: nowrap;
+        }
+
+        .key-box {
+            background: rgba(0,0,0,0.3); border: 1px solid rgba(255,255,255,0.1); border-radius: var(--radius-lg);
+            padding: 14px 16px; display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 8px;
+            cursor: pointer;
+        }
+        .key-text { font-size: 13px; color: var(--primary); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+        .device-done-card {
+            background: var(--bg-card); border: 1px solid rgba(255,255,255,0.08); border-radius: var(--radius-xl);
+            padding: 24px; display: flex; align-items: center; gap: 16px; margin-bottom: 24px; text-align: left;
+        }
+
+        /* --- DEVICE LIST SCREEN (Other Devices) --- */
+        .device-list-group { margin-bottom: 24px; text-align: left; }
+        .device-list-title { font-size: 13px; color: var(--text-muted); margin-bottom: 12px; padding-left: 4px; text-transform: uppercase; font-weight: 700; letter-spacing: 0.5px;}
+        .device-list-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+        .device-list-item { 
+            background: var(--bg-card); border-radius: var(--radius-lg); padding: 16px; 
+            display: flex; align-items: center; justify-content: space-between; cursor: pointer; transition: 0.1s;
+        }
+        .device-list-item:active { transform: scale(0.98); }
+        .device-list-item-left { display: flex; align-items: center; gap: 12px; }
+        .device-list-item-title { font-size: 16px; font-weight: 700; margin-bottom: 2px;}
+        .device-list-item-subtitle { font-size: 12px; color: var(--text-muted); }
+
+        .setup-step { text-align: left; margin-bottom: 24px; }
+        .setup-step-header { display: flex; align-items: center; gap: 12px; margin-bottom: 8px; }
+        .setup-step-num { width: 24px; height: 24px; border-radius: 50%; background: rgba(255,255,255,0.1); display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 800; flex-shrink: 0; }
+        .setup-step-title { font-size: 16px; font-weight: 800; }
+        .setup-step-desc { font-size: 13px; color: var(--text-muted); margin-bottom: 16px; line-height: 1.4; }
+
+        /* --- PAYMENT TAB --- */
+        .payment-header h2 { font-size: 26px; font-weight: 800; margin-bottom: 8px; line-height: 1.2; }
+        .text-primary { color: var(--primary); }
+        .payment-header p { font-size: 14px; color: var(--text-muted); margin-bottom: 24px; line-height: 1.4; }
+        .tariff-cards { display: flex; gap: 12px; margin-bottom: 24px; overflow-x: auto; padding-bottom: 4px; scrollbar-width: none; }
+        .tariff-cards::-webkit-scrollbar { display: none; }
+        .tariff-card { flex: 0 0 170px; background: var(--bg-card); border: 2px solid transparent; border-radius: var(--radius-xl); padding: 16px; cursor: pointer; transition: 0.2s; }
+        .tariff-card.active { border-color: var(--primary); background: rgba(0, 136, 255, 0.05); }
+        .tariff-top { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; }
+        .tariff-months { font-size: 14px; font-weight: 700; }
+        .tariff-badge { background: var(--primary); color: #fff; font-size: 11px; font-weight: 800; padding: 4px 8px; border-radius: 100px; }
+        .tariff-price { font-size: 24px; font-weight: 800; margin-bottom: 8px; }
+        .tariff-bottom { display: flex; justify-content: space-between; font-size: 12px; color: var(--text-muted); }
+        .devices-header { display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; margin-bottom: 16px;}
+        .devices-title { font-size: 16px; font-weight: 800; margin-bottom: 8px; }
+        .devices-subtitle { font-size: 13px; color: var(--text-muted); line-height: 1.4; }
+        .devices-icons { display: flex; gap: 6px; color: var(--text-muted); opacity: 0.5; }
+        .devices-counter-wrapper { display: flex; justify-content: flex-end; }
+        .devices-counter { display: flex; align-items: center; background: rgba(255,255,255,0.05); border-radius: 100px; padding: 4px; }
+        .counter-btn { width: 36px; height: 36px; border-radius: 50%; background: transparent; border: 1px solid rgba(255,255,255,0.1); color: var(--text-main); display: flex; align-items: center; justify-content: center; cursor: pointer; transition: 0.2s;}
+        .counter-btn:active { background: rgba(255,255,255,0.1); }
+        .counter-val { width: 40px; text-align: center; font-size: 16px; font-weight: 800; }
+        .payment-summary {
+            position: fixed; bottom: 0; left: 0; right: 0; background: var(--bg-card); 
+            padding: 20px 16px calc(20px + var(--safe-bottom)); 
+            border-top-left-radius: var(--radius-xl); border-top-right-radius: var(--radius-xl); 
+            box-shadow: 0 -10px 40px rgba(0,0,0,0.5); z-index: 200; 
+            transform: translateY(120%); transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1); 
+        }
+        .payment-summary.show { transform: translateY(0); }
+        .summary-row { display: flex; justify-content: space-between; margin-bottom: 12px; font-size: 14px; color: var(--text-muted); }
+        .summary-label { display: flex; align-items: center; gap: 8px; }
+        .payment-btn { justify-content: space-between; padding: 16px 20px; margin-top: 16px;}
+        .payment-btn-price { display: flex; align-items: center; gap: 8px; font-weight: 800;}
+        .price-old { text-decoration: line-through; opacity: 0.6; font-size: 12px; font-weight: 500; }
+        .price-badge { background: rgba(0,0,0,0.2); padding: 4px 8px; border-radius: 100px; font-size: 12px; }
+
+        /* --- OTHERS --- */
+        .ref-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 24px; }
+        .ref-col-left { display: flex; flex-direction: column; gap: 12px; }
+        .ref-stat-card { background: var(--bg-card); border-radius: var(--radius-lg); padding: 16px; }
+        .ref-stat-label { font-size: 12px; color: var(--text-muted); margin-bottom: 6px; }
+        .ref-stat-val { font-size: 20px; font-weight: 800; }
+        .ref-progress-card { background: var(--bg-card); border-radius: var(--radius-lg); padding: 20px 16px; display: flex; flex-direction: column; align-items: center; justify-content: space-between; }
+        .progress-circle { width: 80px; height: 80px; border-radius: 50%; background: conic-gradient(var(--primary) 0%, rgba(255,255,255,0.05) 0%); display: flex; align-items: center; justify-content: center; margin-bottom: 12px; position: relative; }
+        .progress-circle::before { content: ''; position: absolute; width: 70px; height: 70px; background: var(--bg-card); border-radius: 50%; }
+        .progress-dot { position: absolute; top: 0; left: 50%; transform: translateX(-50%); width: 6px; height: 6px; background: var(--primary); border-radius: 50%; box-shadow: 0 0 10px var(--primary); }
+        .progress-text { font-size: 11px; color: var(--text-muted); margin-bottom: 4px; text-align: center;}
+        .progress-val { font-size: 18px; font-weight: 800; margin-bottom: 16px; text-align: center;}
+        .btn-withdraw { background: var(--primary); color: var(--text-main); border: none; padding: 10px; width: 100%; border-radius: var(--radius-sm); font-weight: 700; font-size: 13px; cursor: pointer; }
+        .detailed-stats-link { text-align: center; color: var(--primary); font-size: 14px; font-weight: 700; display: flex; align-items: center; justify-content: center; gap: 6px; margin-bottom: 24px; cursor: pointer; }
+        .link-section-title { font-size: 18px; font-weight: 800; margin-bottom: 12px; }
+        .link-input-wrap { display: flex; align-items: center; background: var(--bg-card); border-radius: var(--radius-md); padding: 6px 6px 6px 16px; }
+        .link-input { flex: 1; background: transparent; border: none; color: var(--text-main); font-size: 14px; outline: none; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+        .link-copy-btn { background: var(--primary-transparent); border: none; width: 40px; height: 40px; border-radius: var(--radius-sm); display: flex; align-items: center; justify-content: center; color: var(--primary); cursor: pointer; }
+
+        .faq-list { display: flex; flex-direction: column; gap: 12px; margin-bottom: 24px; }
+        .faq-item { background: var(--bg-card); border-radius: var(--radius-lg); padding: 16px; display: flex; align-items: center; gap: 16px; cursor: pointer; }
+        .faq-num { width: 28px; height: 28px; border-radius: 50%; background: rgba(0,136,255,0.15); color: var(--primary); display: flex; align-items: center; justify-content: center; font-weight: 800; font-size: 14px; flex-shrink: 0; }
+        .faq-title { flex: 1; font-size: 15px; font-weight: 700; }
+        .faq-arrow { color: var(--text-muted); }
+        .help-banner { background: linear-gradient(135deg, rgba(17,26,38,1) 0%, rgba(0,60,115,1) 100%); border-radius: var(--radius-xl); padding: 24px; position: relative; overflow: hidden; }
+        .help-banner h3 { font-size: 18px; font-weight: 800; margin-bottom: 8px; }
+        .help-banner p { font-size: 13px; color: var(--text-muted); max-width: 65%; line-height: 1.4; margin-bottom: 16px; }
+        .help-link { color: var(--primary); font-weight: 700; font-size: 14px; display: inline-flex; align-items: center; gap: 6px; cursor: pointer; }
+        .help-icon { position: absolute; bottom: -10px; right: -10px; width: 110px; height: 110px; opacity: 0.9; pointer-events: none; }
+
+        .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.75); backdrop-filter: blur(12px); z-index: 1000; display: none; align-items: center; justify-content: center; opacity: 0; transition: opacity 0.3s ease; padding: 20px; }
+        .modal-overlay.show { display: flex; opacity: 1; }
+        .modal-content { background: var(--bg-card); border: 1px solid rgba(255,255,255,0.05); border-radius: var(--radius-xl); padding: 24px; width: 100%; max-width: 340px; position: relative; box-shadow: 0 20px 40px rgba(0,0,0,0.5); }
+        .modal-close { position: absolute; top: 16px; right: 16px; background: transparent; border: none; color: var(--text-muted); cursor: pointer; padding: 4px; }
+        .modal-title { font-size: 20px; font-weight: 800; margin-bottom: 8px; padding-right: 24px; }
+        .modal-text { font-size: 14px; color: var(--text-muted); line-height: 1.4; }
+        .modal-input { width: 100%; padding: 16px; background: transparent; border: 1px solid var(--primary); border-radius: var(--radius-sm); color: var(--text-main); font-size: 15px; outline: none; margin-top: 10px; margin-bottom: 20px; }
+
+        /* --- SETTINGS TAB & SWITCHERS --- */
+        .settings-promo { background: linear-gradient(135deg, var(--bg-card) 0%, rgba(0, 136, 255, 0.2) 100%); border-radius: var(--radius-xl); padding: 20px; margin-bottom: 24px; position: relative; overflow: hidden; }
+        .settings-promo h3 { font-size: 18px; font-weight: 800; margin-bottom: 6px; }
+        .settings-promo p { font-size: 13px; color: var(--text-muted); max-width: 60%; margin-bottom: 16px; line-height: 1.4;}
+        .settings-promo-icon { position: absolute; right: 10px; top: 50%; transform: translateY(-50%); font-size: 60px; color: var(--primary); opacity: 0.8; }
+        .settings-section { margin-bottom: 24px; }
+        .settings-section-title { font-size: 16px; font-weight: 800; margin-bottom: 12px; padding-left: 4px; }
+        .settings-block { background: var(--bg-card); border-radius: var(--radius-xl); overflow: hidden; }
+        .settings-row { display: flex; align-items: center; justify-content: space-between; padding: 16px 20px; border-bottom: 1px solid rgba(255,255,255,0.05); cursor: pointer; transition: background 0.1s; }
+        .settings-row:active { background: rgba(255,255,255,0.02); }
+        .settings-row:last-child { border-bottom: none; }
+        .settings-row-left { display: flex; align-items: center; gap: 12px; }
+        .settings-icon { width: 36px; height: 36px; border-radius: 50%; background: rgba(255,255,255,0.05); display: flex; align-items: center; justify-content: center; color: var(--primary); }
+        .settings-row-title { font-size: 15px; font-weight: 700; }
+        .settings-row-subtitle { font-size: 12px; color: var(--text-muted); margin-top: 2px; }
+        .settings-action { color: var(--text-muted); }
+        .settings-action.primary { color: var(--primary); font-weight: 700; font-size: 14px; }
+
+        /* Переключатели iOS Style */
+        .switch { position: relative; display: inline-block; width: 46px; height: 26px; }
+        .switch input { opacity: 0; width: 0; height: 0; }
+        .slider { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: rgba(255,255,255,0.1); transition: .3s; border-radius: 34px; }
+        .slider:before { position: absolute; content: ""; height: 22px; width: 22px; left: 2px; bottom: 2px; background-color: white; transition: .3s; border-radius: 50%; }
+        input:checked + .slider { background-color: var(--primary); }
+        input:checked + .slider:before { transform: translateX(20px); }
+
+        .doc-card { background: var(--bg-card); border-radius: var(--radius-xl); padding: 24px; margin-bottom: 16px; }
+        .doc-section { margin-bottom: 24px; }
+        .doc-title { font-size: 20px; font-weight: 800; margin-bottom: 4px; }
+        .doc-date { font-size: 12px; color: var(--text-muted); margin-bottom: 16px; }
+        .doc-h3 { font-size: 16px; font-weight: 700; margin-top: 20px; margin-bottom: 8px; }
+        .doc-p { font-size: 14px; color: var(--text-muted); line-height: 1.5; margin-bottom: 12px; }
+        .doc-ul { font-size: 14px; color: var(--text-muted); line-height: 1.5; padding-left: 20px; margin-bottom: 12px; }
+        .doc-link { color: var(--primary); text-decoration: none; cursor: pointer; }
+
+        .bottom-nav { position: fixed; bottom: calc(16px + var(--safe-bottom)); left: 16px; right: 16px; height: var(--nav-height); background: var(--bg-card); border-radius: 35px; display: flex; align-items: center; justify-content: space-around; padding: 0 8px; box-shadow: 0 10px 30px rgba(0,0,0,0.5); z-index: 100; }
+        .nav-item { width: 60px; height: 54px; border-radius: 27px; display: flex; align-items: center; justify-content: center; color: var(--text-muted); cursor: pointer; transition: all 0.3s ease; }
+        .nav-item.active { background: var(--primary); color: var(--text-main); }
+        .nav-item i { width: 24px; height: 24px; }
+        .check-circle { width: 24px; height: 24px; background: var(--success); border-radius: 50%; display: flex; align-items: center; justify-content: center; color: #fff; }
+    </style>
+</head>
+<body>
+
+    <div id="faqModal" class="modal-overlay" onclick="closeModal(event)">
+        <div class="modal-content" onclick="event.stopPropagation()">
+            <button class="modal-close" onclick="closeModal()"><i data-lucide="x" style="width: 20px;"></i></button>
+            <h3 class="modal-title" id="modalTitle">Заголовок</h3>
+            <p class="modal-text" id="modalText">Текст инструкции</p>
+        </div>
+    </div>
+
+    <div id="emailModal" class="modal-overlay" onclick="closeModal(event)">
+        <div class="modal-content" onclick="event.stopPropagation()">
+            <button type="button" class="modal-close" onclick="closeModal()"><i data-lucide="x" style="width: 20px;"></i></button>
+            <div id="emailModalBody">
+                <h3 class="modal-title" style="margin-bottom: 12px; font-size: 22px;">Введите электронную почту</h3>
+                <p class="modal-text" id="emailModalDesc">На неё придёт код для подтверждения</p>
+                <input type="email" class="modal-input" placeholder="name@example.com" id="emailInput">
+                <button type="button" class="btn btn-primary" onclick="handleEmailModalAction(event)" id="emailActionBtn">Отправить код</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ТАБ 1: ГЛАВНАЯ -->
+    <div id="view-home" class="view-container active">
+        <div class="balance-section" style="margin-top: 24px;">
+            <div class="balance-amount">0 ₽</div>
+            <div class="status-badge"><i data-lucide="info" style="width: 14px; height: 14px; fill: var(--danger); color: var(--bg-base);"></i>Подписка закончилась</div>
+            <div class="pills-row"><div class="pill">0 устройств</div><div class="pill">LTE безлимит</div></div>
+        </div>
+
+        <div class="home-actions">
+            <button class="btn btn-primary" onclick="switchTab('payment')"><i data-lucide="credit-card" style="width: 20px; height: 20px;"></i>Оплатить подписку</button>
+            <button class="btn btn-outline" onclick="switchTab('setup-device')"><i data-lucide="settings" style="width: 20px; height: 20px;"></i>Настроить VPN</button>
+        </div>
+
+        <div class="home-grid">
+            <div class="grid-card" onclick="switchTab('ref')">
+                <h3>Пригласи друга</h3>
+                <div class="grid-btn"><i data-lucide="arrow-right" style="width: 18px; height: 18px;"></i></div>
+                <div class="grid-icon-wrapper"><i data-lucide="gift" style="width: 60px; height: 60px; color: var(--primary);"></i></div>
+            </div>
+            <div class="grid-card" onclick="switchTab('support')">
+                <h3>Поддержка</h3>
+                <div class="grid-btn"><i data-lucide="arrow-right" style="width: 18px; height: 18px;"></i></div>
+                <div class="grid-icon-wrapper"><i data-lucide="headphones" style="width: 60px; height: 60px; color: var(--primary);"></i></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ОКНО: Где настраиваем? (setup-device) -->
+    <div id="view-setup-device" class="view-container">
+        <div class="header-top">
+            <button class="back-btn" onclick="switchTab('home')"><i data-lucide="chevron-left" style="width: 20px;"></i></button>
+        </div>
+        <div class="setup-screen">
+            <div class="setup-icon-box"><i data-lucide="smartphone" style="width: 32px; height: 32px; color: var(--primary);"></i></div>
+            <h2 class="setup-title">Где настраиваем?</h2>
+            <p class="setup-desc">Выберите устройство, на котором требуется настройка</p>
+
+            <div class="device-option-card active" id="devThis" onclick="selectDeviceOption('this')">
+                <div class="device-option-title">На этом устройстве</div>
+                <i id="iconThis" data-lucide="smartphone" style="color: var(--primary);"></i>
+            </div>
+            <div class="device-option-card" id="devOther" onclick="selectDeviceOption('other')">
+                <div class="device-option-title">На другом устройстве</div>
+                <i id="iconOther" data-lucide="laptop" style="color: var(--text-muted);"></i>
+            </div>
+
+            <div style="margin-top: auto;">
+                <button id="setupDeviceNextBtn" class="btn btn-white" style="margin-top: 24px;" onclick="autoDetectDeviceAndSwitch()">Настроить на этом устройстве</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ОКНО: Выбор приложения (setup-app - Универсальное) -->
+    <div id="view-setup-app" class="view-container">
+        <div class="header-top">
+            <button class="back-btn" onclick="switchTab('setup-device')"><i data-lucide="chevron-left" style="width: 20px;"></i></button>
+        </div>
+        <div class="setup-screen">
+            <div class="setup-icon-box"><i data-lucide="cloud-download" style="width: 32px; height: 32px; color: var(--primary);"></i></div>
+            <h2 class="setup-title">Какое приложение?</h2>
+            <p class="setup-desc">Установите приложение которое подходит под ваши задачи</p>
+
+            <div class="happ-box">
+                <div class="happ-title">HAPP</div>
+                <div class="happ-phone-mock">
+                    <div class="happ-logo-badge">H</div>
+                    <div class="happ-support-label">Поддерживается</div>
+                </div>
+            </div>
+
+            <div style="margin-top: auto;">
+                <button class="btn btn-white" style="margin-bottom: 12px;" onclick="window.open('https://github.com/Happ-proxy/happ-desktop/releases/latest/download/setup-Happ.x64.exe', '_blank')">
+                    <i data-lucide="cloud-download" style="width: 18px; height: 18px;"></i> Установить HAPP
+                </button>
+                <button class="btn btn-dark" onclick="switchTab('setup-key')">У меня уже есть приложение</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ОКНО: Список других устройств (setup-other) -->
+    <div id="view-setup-other" class="view-container">
+        <div class="header-top">
+            <button class="back-btn" onclick="switchTab('setup-device')"><i data-lucide="chevron-left" style="width: 20px;"></i></button>
+        </div>
+        <div class="setup-screen" style="padding-top: 0; min-height: auto;">
+            <div class="setup-icon-box" style="margin-top: 10px;"><i data-lucide="monitor-smartphone" style="width: 32px; height: 32px; color: var(--primary);"></i></div>
+            <h2 class="setup-title">На другом устройстве</h2>
+            <p class="setup-desc" style="margin-bottom: 16px;">Скачайте приложение на ваше устройство и импортируйте ключ-ссылку</p>
+
+            <div class="key-box" style="margin-bottom: 24px;" onclick="copyKeyTextOther()">
+                <span class="key-text" id="userKeyTextOther">https://subs.eu-fffast.com/fe5766cfe9c3a467</span>
+                <i data-lucide="copy" style="width: 18px; height: 18px; color: var(--primary);"></i>
+            </div>
+
+            <div class="device-list-group">
+                <div class="device-list-title">Устройства</div>
+                <div class="device-list-grid">
+                    <div class="device-list-item" onclick="switchTab('setup-ios')">
+                        <div class="device-list-item-left">
+                            <i data-lucide="apple" style="width: 24px; height: 24px; color: var(--text-main);"></i>
+                            <div><div class="device-list-item-title">iOS</div><div class="device-list-item-subtitle">App Store</div></div>
+                        </div>
+                        <i data-lucide="chevron-right" style="width: 16px; color: var(--text-muted);"></i>
+                    </div>
+                    <div class="device-list-item" onclick="switchTab('setup-android')">
+                        <div class="device-list-item-left">
+                            <i data-lucide="play" style="width: 24px; height: 24px; color: var(--text-main);"></i>
+                            <div><div class="device-list-item-title">Android</div><div class="device-list-item-subtitle">Google Play</div></div>
+                        </div>
+                        <i data-lucide="chevron-right" style="width: 16px; color: var(--text-muted);"></i>
+                    </div>
+                    <div class="device-list-item" onclick="switchTab('setup-macos')">
+                        <div class="device-list-item-left">
+                            <i data-lucide="monitor" style="width: 24px; height: 24px; color: var(--text-main);"></i>
+                            <div><div class="device-list-item-title">macOS</div><div class="device-list-item-subtitle">App Store</div></div>
+                        </div>
+                        <i data-lucide="chevron-right" style="width: 16px; color: var(--text-muted);"></i>
+                    </div>
+                    <div class="device-list-item" onclick="switchTab('setup-tv')">
+                        <div class="device-list-item-left">
+                            <i data-lucide="tv" style="width: 24px; height: 24px; color: var(--text-main);"></i>
+                            <div><div class="device-list-item-title">TV</div></div>
+                        </div>
+                        <i data-lucide="chevron-right" style="width: 16px; color: var(--text-muted);"></i>
+                    </div>
+                    <div class="device-list-item" onclick="switchTab('setup-windows')">
+                        <div class="device-list-item-left">
+                            <i data-lucide="layout-dashboard" style="width: 24px; height: 24px; color: var(--text-main);"></i>
+                            <div><div class="device-list-item-title">Windows</div></div>
+                        </div>
+                        <i data-lucide="chevron-right" style="width: 16px; color: var(--text-muted);"></i>
+                    </div>
+                    <div class="device-list-item" onclick="switchTab('setup-linux')">
+                        <div class="device-list-item-left">
+                            <i data-lucide="terminal" style="width: 24px; height: 24px; color: var(--text-main);"></i>
+                            <div><div class="device-list-item-title">Linux</div></div>
+                        </div>
+                        <i data-lucide="chevron-right" style="width: 16px; color: var(--text-muted);"></i>
+                    </div>
+                </div>
+            </div>
+
+            <div class="device-list-group" style="margin-top: 16px;">
+                <div class="device-list-title">Расширение для браузера</div>
+                <div class="device-list-item" onclick="switchTab('setup-chrome')">
+                    <div class="device-list-item-left">
+                        <i data-lucide="chrome" style="width: 24px; height: 24px; color: var(--text-main);"></i>
+                        <div class="device-list-item-title">Chrome</div>
+                    </div>
+                    <i data-lucide="chevron-right" style="width: 16px; color: var(--text-muted);"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ИНДИВИДУАЛЬНЫЕ ОКНА УСТРОЙСТВ -->
+    <!-- iOS -->
+    <div id="view-setup-ios" class="view-container">
+        <div class="header-top"><button class="back-btn" onclick="switchTab('setup-other')"><i data-lucide="chevron-left" style="width: 20px;"></i></button></div>
+        <div class="setup-screen" style="padding-top:0;">
+            <div class="setup-icon-box"><i data-lucide="apple" style="width: 32px; height: 32px; color: var(--primary);"></i></div>
+            <h2 class="setup-title" style="margin-bottom: 30px;">Настроить на iOS</h2>
+            <div class="setup-step">
+                <div class="setup-step-header"><div class="setup-step-num">1</div><div class="setup-step-title">Скачайте приложение HAPP</div></div>
+                <div class="setup-step-desc">Установите наше приложение на устройство, чтобы подключить VPN</div>
+                <button class="btn btn-white" onclick="window.open('https://apps.apple.com/', '_blank')">
+                    <i data-lucide="download" style="width: 18px; height: 18px;"></i> App Store
+                </button>
+            </div>
+            <div class="setup-step">
+                <div class="setup-step-header"><div class="setup-step-num">2</div><div class="setup-step-title">Добавьте ключ-ссылку</div></div>
+                <div class="setup-step-desc">Скопируйте ссылку и вставьте её на экране подключения, или отправьте её другу</div>
+                <div class="key-box" onclick="copyKeyTextOther()"><span class="key-text">https://subs.eu-fffast.com/fe5766cfe9c3a467</span></div>
+                <button class="btn btn-white" style="margin-top: 12px;" onclick="copyKeyTextOther()"><i data-lucide="paperclip" style="width: 18px; height: 18px;"></i> Скопировать ключ-ссылку</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Android -->
+    <div id="view-setup-android" class="view-container">
+        <div class="header-top"><button class="back-btn" onclick="switchTab('setup-other')"><i data-lucide="chevron-left" style="width: 20px;"></i></button></div>
+        <div class="setup-screen" style="padding-top:0;">
+            <div class="setup-icon-box"><i data-lucide="play" style="width: 32px; height: 32px; color: var(--primary);"></i></div>
+            <h2 class="setup-title" style="margin-bottom: 30px;">Настроить на Android</h2>
+            <div class="setup-step">
+                <div class="setup-step-header"><div class="setup-step-num">1</div><div class="setup-step-title">Скачайте приложение HAPP</div></div>
+                <div class="setup-step-desc">Установите наше приложение на устройство, чтобы подключить VPN</div>
+                <button class="btn btn-white" onclick="window.open('https://play.google.com/', '_blank')">
+                    <i data-lucide="download" style="width: 18px; height: 18px;"></i> Google Play
+                </button>
+            </div>
+            <div class="setup-step">
+                <div class="setup-step-header"><div class="setup-step-num">2</div><div class="setup-step-title">Добавьте ключ-ссылку</div></div>
+                <div class="setup-step-desc">Скопируйте ссылку и вставьте её на экране подключения, или отправьте её другу</div>
+                <div class="key-box" onclick="copyKeyTextOther()"><span class="key-text">https://subs.eu-fffast.com/fe5766cfe9c3a467</span></div>
+                <button class="btn btn-white" style="margin-top: 12px;" onclick="copyKeyTextOther()"><i data-lucide="paperclip" style="width: 18px; height: 18px;"></i> Скопировать ключ-ссылку</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- macOS -->
+    <div id="view-setup-macos" class="view-container">
+        <div class="header-top"><button class="back-btn" onclick="switchTab('setup-other')"><i data-lucide="chevron-left" style="width: 20px;"></i></button></div>
+        <div class="setup-screen" style="padding-top:0;">
+            <div class="setup-icon-box"><i data-lucide="monitor" style="width: 32px; height: 32px; color: var(--primary);"></i></div>
+            <h2 class="setup-title" style="margin-bottom: 30px;">Настроить на macOS</h2>
+            <div class="setup-step">
+                <div class="setup-step-header"><div class="setup-step-num">1</div><div class="setup-step-title">Скачайте приложение HAPP</div></div>
+                <div class="setup-step-desc">Установите наше приложение на устройство, чтобы подключить VPN</div>
+                <button class="btn btn-white" onclick="window.open('https://apps.apple.com/', '_blank')">
+                    <i data-lucide="download" style="width: 18px; height: 18px;"></i> App Store
+                </button>
+            </div>
+            <div class="setup-step">
+                <div class="setup-step-header"><div class="setup-step-num">2</div><div class="setup-step-title">Добавьте ключ-ссылку</div></div>
+                <div class="setup-step-desc">Скопируйте ссылку и вставьте её на экране подключения, или отправьте её другу</div>
+                <div class="key-box" onclick="copyKeyTextOther()"><span class="key-text">https://subs.eu-fffast.com/fe5766cfe9c3a467</span></div>
+                <button class="btn btn-white" style="margin-top: 12px;" onclick="copyKeyTextOther()"><i data-lucide="paperclip" style="width: 18px; height: 18px;"></i> Скопировать ключ-ссылку</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- TV -->
+    <div id="view-setup-tv" class="view-container">
+        <div class="header-top"><button class="back-btn" onclick="switchTab('setup-other')"><i data-lucide="chevron-left" style="width: 20px;"></i></button></div>
+        <div class="setup-screen" style="padding-top:0;">
+            <div class="setup-icon-box"><i data-lucide="tv" style="width: 32px; height: 32px; color: var(--primary);"></i></div>
+            <h2 class="setup-title" style="margin-bottom: 30px;">Настроить на TV</h2>
+            <div class="setup-step">
+                <div class="setup-step-header"><div class="setup-step-num">1</div><div class="setup-step-title">Скачайте приложение HAPP</div></div>
+                <div class="setup-step-desc">Установите приложение на устройство, чтобы подключить VPN</div>
+                <button class="btn btn-white" onclick="window.open('https://github.com/Happ-proxy/happ-android/releases/latest/download/Happ.apk', '_blank')">
+                    <i data-lucide="download" style="width: 18px; height: 18px;"></i> Скачать .apk файл
+                </button>
+            </div>
+            <div class="setup-step">
+                <div class="setup-step-header"><div class="setup-step-num">2</div><div class="setup-step-title">Добавьте ключ-ссылку</div></div>
+                <div class="setup-step-desc">Скопируйте ссылку и вставьте её на экране подключения, или отправьте её другу</div>
+                <div class="key-box" onclick="copyKeyTextOther()"><span class="key-text">https://subs.eu-fffast.com/fe5766cfe9c3a467</span></div>
+                <button class="btn btn-white" style="margin-top: 12px;" onclick="copyKeyTextOther()"><i data-lucide="paperclip" style="width: 18px; height: 18px;"></i> Скопировать ключ-ссылку</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Windows -->
+    <div id="view-setup-windows" class="view-container">
+        <div class="header-top"><button class="back-btn" onclick="switchTab('setup-other')"><i data-lucide="chevron-left" style="width: 20px;"></i></button></div>
+        <div class="setup-screen" style="padding-top:0;">
+            <div class="setup-icon-box"><i data-lucide="layout-dashboard" style="width: 32px; height: 32px; color: var(--primary);"></i></div>
+            <h2 class="setup-title" style="margin-bottom: 30px;">Настроить на Windows</h2>
+            <div class="setup-step">
+                <div class="setup-step-header"><div class="setup-step-num">1</div><div class="setup-step-title">Скачайте приложение HAPP</div></div>
+                <div class="setup-step-desc">Установите приложение на устройство, чтобы подключить VPN</div>
+                <button class="btn btn-white" onclick="window.open('https://github.com/Happ-proxy/happ-desktop/releases/latest/download/setup-Happ.x64.exe', '_blank')">
+                    <i data-lucide="download" style="width: 18px; height: 18px;"></i> Скачать .exe файл
+                </button>
+            </div>
+            <div class="setup-step">
+                <div class="setup-step-header"><div class="setup-step-num">2</div><div class="setup-step-title">Добавьте ключ-ссылку</div></div>
+                <div class="setup-step-desc">Скопируйте ссылку и вставьте её на экране подключения, или отправьте её другу</div>
+                <div class="key-box" onclick="copyKeyTextOther()"><span class="key-text">https://subs.eu-fffast.com/fe5766cfe9c3a467</span></div>
+                <button class="btn btn-white" style="margin-top: 12px;" onclick="copyKeyTextOther()"><i data-lucide="paperclip" style="width: 18px; height: 18px;"></i> Скопировать ключ-ссылку</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Linux -->
+    <div id="view-setup-linux" class="view-container">
+        <div class="header-top"><button class="back-btn" onclick="switchTab('setup-other')"><i data-lucide="chevron-left" style="width: 20px;"></i></button></div>
+        <div class="setup-screen" style="padding-top:0;">
+            <div class="setup-icon-box"><i data-lucide="terminal" style="width: 32px; height: 32px; color: var(--primary);"></i></div>
+            <h2 class="setup-title" style="margin-bottom: 30px;">Настроить на Linux</h2>
+            <div class="setup-step">
+                <div class="setup-step-header"><div class="setup-step-num">1</div><div class="setup-step-title">Скачайте приложение HAPP</div></div>
+                <div class="setup-step-desc">Установите приложение на устройство, чтобы подключить VPN</div>
+                <button class="btn btn-white" onclick="window.open('https://github.com/Happ-proxy/happ-desktop/releases/latest/download/Happ.linux.arm64.deb', '_blank')">
+                    <i data-lucide="download" style="width: 18px; height: 18px;"></i> Скачать
+                </button>
+            </div>
+            <div class="setup-step">
+                <div class="setup-step-header"><div class="setup-step-num">2</div><div class="setup-step-title">Добавьте ключ-ссылку</div></div>
+                <div class="setup-step-desc">Скопируйте ссылку и вставьте её на экране подключения, или отправьте её другу</div>
+                <div class="key-box" onclick="copyKeyTextOther()"><span class="key-text">https://subs.eu-fffast.com/fe5766cfe9c3a467</span></div>
+                <button class="btn btn-white" style="margin-top: 12px;" onclick="copyKeyTextOther()"><i data-lucide="paperclip" style="width: 18px; height: 18px;"></i> Скопировать ключ-ссылку</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Chrome -->
+    <div id="view-setup-chrome" class="view-container">
+        <div class="header-top"><button class="back-btn" onclick="switchTab('setup-other')"><i data-lucide="chevron-left" style="width: 20px;"></i></button></div>
+        <div class="setup-screen" style="padding-top:0;">
+            <div class="setup-icon-box"><i data-lucide="chrome" style="width: 32px; height: 32px; color: var(--primary);"></i></div>
+            <h2 class="setup-title" style="margin-bottom: 30px;">Настроить в Chrome</h2>
+            <div class="setup-step">
+                <div class="setup-step-header"><div class="setup-step-num">1</div><div class="setup-step-title">Установите расширение HAPP</div></div>
+                <div class="setup-step-desc">Загрузите HAPP в магазине расширений Chrome</div>
+                <button class="btn btn-white" onclick="window.open('https://happ-proxy.com/', '_blank')">
+                    <i data-lucide="download" style="width: 18px; height: 18px;"></i> Загрузить
+                </button>
+            </div>
+            <div class="setup-step">
+                <div class="setup-step-header"><div class="setup-step-num">2</div><div class="setup-step-title">Добавьте ключ-ссылку</div></div>
+                <div class="setup-step-desc">Скопируйте ссылку и вставьте её на экране подключения, или отправьте её другу</div>
+                <div class="key-box" onclick="copyKeyTextOther()"><span class="key-text">https://subs.eu-fffast.com/fe5766cfe9c3a467</span></div>
+                <button class="btn btn-white" style="margin-top: 12px;" onclick="copyKeyTextOther()"><i data-lucide="paperclip" style="width: 18px; height: 18px;"></i> Скопировать ключ-ссылку</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ОКНО 3: Ваш ключ (setup-key - Для этого устройства) -->
+    <div id="view-setup-key" class="view-container">
+        <div class="header-top">
+            <button class="back-btn" onclick="switchTab('setup-app')"><i data-lucide="chevron-left" style="width: 20px;"></i></button>
+        </div>
+        <div class="setup-screen">
+            <div class="setup-icon-box"><i data-lucide="link" style="width: 32px; height: 32px; color: var(--primary);"></i></div>
+            <h2 class="setup-title">Ваш ключ</h2>
+            <p class="setup-desc">Нажмите «Добавить в приложение», чтобы автоматически добавить ключ</p>
+
+            <div class="key-box" onclick="copyKeyText()">
+                <span class="key-text" id="userKeyText">https://subs.eu-fffast.com/fe5766cfe9c3a467</span>
+                <i data-lucide="copy" style="width: 18px; height: 18px; color: var(--primary);"></i>
+            </div>
+            <p style="font-size: 12px; color: var(--text-muted); margin-bottom: 24px;">Либо нажмите на поле, чтобы скопировать ключ</p>
+
+            <div style="margin-top: auto;">
+                <button class="btn btn-white" style="margin-bottom: 12px;" onclick="addToApp()">
+                    <i data-lucide="external-link" style="width: 18px; height: 18px;"></i> Добавить в приложение
+                </button>
+                <button class="btn btn-dark" onclick="switchTab('setup-done')">Завершить</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ОКНО 4: Готово! (setup-done) -->
+    <div id="view-setup-done" class="view-container">
+        <div class="header-top">
+            <button class="back-btn" onclick="switchTab('setup-key')"><i data-lucide="chevron-left" style="width: 20px;"></i></button>
+        </div>
+        <div class="setup-screen">
+            <div class="setup-icon-box" style="background: rgba(0,200,83,0.15); border-color: rgba(0,200,83,0.3); color: var(--success);"><i data-lucide="check" style="width: 32px; height: 32px;"></i></div>
+            <h2 class="setup-title">Готово!</h2>
+            <p class="setup-desc">Поздравляем, VPN подключен — пользуйтесь интернетом без ограничений</p>
+
+            <div class="device-done-card">
+                <div style="width: 48px; height: 48px; border-radius: 50%; background: rgba(0,136,255,0.15); display: flex; align-items: center; justify-content: center; color: var(--primary);">
+                    <i data-lucide="smartphone" style="width: 24px; height: 24px;"></i>
+                </div>
+                <div>
+                    <div style="font-size: 16px; font-weight: 800;">Это устройство</div>
+                    <div style="font-size: 13px; color: var(--text-muted);">HAPP</div>
+                </div>
+            </div>
+
+            <div style="margin-top: auto;">
+                <button class="btn btn-white" style="margin-bottom: 12px;" onclick="switchTab('home')">На главную</button>
+                <button class="btn btn-dark" onclick="switchTab('setup-device')">Добавить ещё устройство</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ОСТАЛЬНЫЕ ТАБЫ (Оплата, Рефералы, Поддержка, Настройки, Документы) -->
+    <div id="view-payment" class="view-container">
+        <div class="header-top"><button class="back-btn" onclick="switchTab('home')"><i data-lucide="chevron-left" style="width: 20px;"></i></button></div>
+        <div class="payment-header">
+            <h2>Интернет на <span class="text-primary">ваших условиях</span></h2>
+            <p>Доступ ко всему миру и высокий уровень защиты — в одном тарифе</p>
+        </div>
+        <div class="tariff-cards">
+            <div class="tariff-card active" id="tariff-12" onclick="selectTariff(12)">
+                <div class="tariff-top"><span class="tariff-months">12 месяцев</span><span class="tariff-badge">-25%</span></div>
+                <div class="tariff-price">1799 ₽</div>
+                <div class="tariff-bottom"><span class="tariff-per-month">150 ₽ / мес</span><span>🔥</span></div>
+            </div>
+            <div class="tariff-card" id="tariff-6" onclick="selectTariff(6)">
+                <div class="tariff-top"><span class="tariff-months">6 месяцев</span><span class="tariff-badge">-16%</span></div>
+                <div class="tariff-price">999 ₽</div>
+                <div class="tariff-bottom"><span class="tariff-per-month">167 ₽ / мес</span></div>
+            </div>
+            <div class="tariff-card" id="tariff-1" onclick="selectTariff(1)">
+                <div class="tariff-top"><span class="tariff-months">1 месяц</span></div>
+                <div class="tariff-price">199 ₽</div>
+                <div class="tariff-bottom"><span class="tariff-per-month">199 ₽ / мес</span></div>
+            </div>
+        </div>
+        <div class="card devices-section">
+            <div class="devices-header">
+                <div>
+                    <div class="devices-title">Выберите нужное количество устройств</div>
+                    <div class="devices-subtitle">В тариф включены 3 устройства. Дополнительные устройства: +50₽ / месяц каждое</div>
+                </div>
+                <div class="devices-icons"><i data-lucide="smartphone" style="width:16px;"></i><i data-lucide="laptop" style="width:16px;"></i><i data-lucide="tv" style="width:16px;"></i></div>
+            </div>
+            <div class="devices-counter-wrapper">
+                <div class="devices-counter">
+                    <button class="counter-btn" onclick="updateDevices(-1)"><i data-lucide="minus" style="width:16px;"></i></button>
+                    <span class="counter-val" id="deviceCount">3</span>
+                    <button class="counter-btn" onclick="updateDevices(1)"><i data-lucide="plus" style="width:16px;"></i></button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="view-ref" class="view-container">
+        <div class="header-top"><button class="back-btn" onclick="switchTab('home')"><i data-lucide="chevron-left" style="width: 20px;"></i></button><div class="page-title">Реферальная программа</div></div>
+        <div class="ref-grid">
+            <div class="ref-col-left">
+                <div class="ref-stat-card"><div class="ref-stat-label">Баланс</div><div class="ref-stat-val">0 ₽</div></div>
+                <div class="ref-stat-card"><div class="ref-stat-label">Всего рефералов</div><div class="ref-stat-val">0</div></div>
+                <div class="ref-stat-card"><div class="ref-stat-label">Всего заработано</div><div class="ref-stat-val">0 ₽</div></div>
+            </div>
+            <div class="ref-progress-card">
+                <div class="progress-circle"><div class="progress-dot"></div></div>
+                <div><div class="progress-text">Нужно накопить</div><div class="progress-val">1 000 ₽</div><button class="btn-withdraw">Вывести</button></div>
+            </div>
+        </div>
+        <div class="detailed-stats-link">Подробная статистика <i data-lucide="external-link" style="width: 16px; height: 16px;"></i></div>
+        <div class="link-section-title">Ваша ссылка для Telegram</div>
+        <div class="link-input-wrap">
+            <input type="text" class="link-input" value="https://t.me/afroVPN_bot?start=" readonly id="refLink">
+            <button class="link-copy-btn" onclick="copyLink()"><i data-lucide="copy" style="width: 18px; height: 18px;"></i></button>
+        </div>
+    </div>
+
+    <div id="view-support" class="view-container">
+        <div class="header-top"><button class="back-btn" onclick="switchTab('home')"><i data-lucide="chevron-left" style="width: 20px;"></i></button><div class="page-title">Поддержка</div></div>
+        <div class="faq-list">
+            <div class="faq-item" onclick="openModal(1)"><div class="faq-num">1</div><div class="faq-title">VPN не подключается</div><div class="faq-arrow"><i data-lucide="arrow-right" style="width: 18px;"></i></div></div>
+            <div class="faq-item" onclick="openModal(2)"><div class="faq-num">2</div><div class="faq-title">Как установить VPN?</div><div class="faq-arrow"><i data-lucide="arrow-right" style="width: 18px;"></i></div></div>
+            <div class="faq-item" onclick="openModal(3)"><div class="faq-num">3</div><div class="faq-title">Интернет стал медленнее</div><div class="faq-arrow"><i data-lucide="arrow-right" style="width: 18px;"></i></div></div>
+            <div class="faq-item" onclick="openModal(4)"><div class="faq-num">4</div><div class="faq-title">Нашли баг или ошибку?</div><div class="faq-arrow"><i data-lucide="arrow-right" style="width: 18px;"></i></div></div>
+        </div>
+        <div class="help-banner">
+            <h3>Нужна помощь?</h3>
+            <p>Напишите в чат, если возникли проблемы или вопросы</p>
+            <div class="help-link" onclick="openSupportChat()">Перейти в чат <i data-lucide="arrow-right" style="width: 16px;"></i></div>
+            <div class="help-icon"><i data-lucide="headset" style="width: 90px; height: 90px; color: var(--primary);"></i></div>
+        </div>
+    </div>
+
+    <!-- НАСТРОЙКИ (Settings) -->
+    <div id="view-settings" class="view-container">
+        <div class="header-top"><button class="back-btn" onclick="switchTab('home')"><i data-lucide="chevron-left" style="width: 20px;"></i></button><div class="page-title">Настройки</div></div>
+        <div class="settings-promo" onclick="switchTab('payment')">
+            <h3>Подписка</h3>
+            <p>Настройте подписку под свои потребности</p>
+            <div class="help-link">Настроить <i data-lucide="arrow-right" style="width: 16px;"></i></div>
+            <div class="settings-promo-icon"><i data-lucide="shield-check" style="width: 70px; height: 70px;"></i></div>
+        </div>
+        <div class="settings-section">
+            <div class="settings-section-title">Аккаунт</div>
+            <div class="settings-block">
+                <!-- НОВЫЙ ФУНКЦИОНАЛ: Кнопка Уведомления -->
+                <div class="settings-row" onclick="switchTab('notifications')">
+                    <div class="settings-row-left">
+                        <div class="settings-icon"><i data-lucide="bell" style="width: 18px;"></i></div>
+                        <div class="settings-row-title">Уведомления</div>
+                    </div>
+                    <div class="settings-action"><i data-lucide="arrow-right" style="width: 18px;"></i></div>
+                </div>
+                <!-- НОВЫЙ ФУНКЦИОНАЛ: Кнопка Устройства -->
+                <div class="settings-row" onclick="switchTab('devices')">
+                    <div class="settings-row-left">
+                        <div class="settings-icon"><i data-lucide="monitor" style="width: 18px;"></i></div>
+                        <div class="settings-row-title">Устройства</div>
+                    </div>
+                    <div class="settings-action"><i data-lucide="arrow-right" style="width: 18px;"></i></div>
+                </div>
+            </div>
+        </div>
+        <div class="settings-section">
+            <div class="settings-section-title">Способы входа</div>
+            <div class="settings-block">
+                <div class="settings-row" onclick="openEmailModal()">
+                    <div class="settings-row-left">
+                        <div class="settings-icon" style="background:transparent; color: var(--text-main);"><i data-lucide="mail" style="width: 24px;"></i></div>
+                        <div><div class="settings-row-title">Email</div><div class="settings-row-subtitle">Не привязан</div></div>
+                    </div>
+                    <div class="settings-action primary">Привязать</div>
+                </div>
+                <div class="settings-row">
+                    <div class="settings-row-left">
+                        <div class="settings-icon" style="background:transparent; color: var(--primary);"><i data-lucide="send" style="width: 24px; fill: var(--primary);"></i></div>
+                        <div><div class="settings-row-title">Telegram</div><div class="settings-row-subtitle">id: 883071272</div></div>
+                    </div>
+                    <div class="settings-action"><div class="check-circle"><i data-lucide="check" style="width: 14px;"></i></div></div>
+                </div>
+            </div>
+        </div>
+        <div class="settings-section">
+            <div class="settings-section-title">Информация</div>
+            <div class="settings-block">
+                <div class="settings-row" onclick="switchTab('documents')">
+                    <div class="settings-row-left">
+                        <div class="settings-icon" style="background:transparent; color: var(--primary);"><i data-lucide="file-text" style="width: 24px;"></i></div>
+                        <div class="settings-row-title">Пользовательское соглашение</div>
+                    </div>
+                    <div class="settings-action"><i data-lucide="external-link" style="width: 18px;"></i></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ЭКРАН УВЕДОМЛЕНИЙ -->
+    <div id="view-notifications" class="view-container">
+        <div class="header-top">
+            <button class="back-btn" onclick="switchTab('settings')"><i data-lucide="chevron-left" style="width: 20px;"></i></button>
+            <div class="page-title">Уведомления</div>
+        </div>
+        <div class="settings-block">
+            <div class="settings-row">
+                <div class="settings-row-left"><div class="settings-row-title">Окончание подписки</div></div>
+                <label class="switch"><input type="checkbox" checked><span class="slider"></span></label>
+            </div>
+            <div class="settings-row">
+                <div class="settings-row-left"><div class="settings-row-title">Новости и обновления</div></div>
+                <label class="switch"><input type="checkbox" checked><span class="slider"></span></label>
+            </div>
+            <div class="settings-row" style="border-bottom: none;">
+                <div class="settings-row-left"><div class="settings-row-title">Акции и предложения</div></div>
+                <label class="switch"><input type="checkbox"><span class="slider"></span></label>
+            </div>
+        </div>
+        <p style="font-size: 13px; color: var(--text-muted); margin-top: 12px; padding: 0 12px; line-height: 1.4;">Управляйте тем, какие уведомления вы хотите получать от нашего бота.</p>
+    </div>
+
+    <!-- ЭКРАН УСТРОЙСТВ -->
+    <div id="view-devices" class="view-container">
+        <div class="header-top">
+            <button class="back-btn" onclick="switchTab('settings')"><i data-lucide="chevron-left" style="width: 20px;"></i></button>
+            <div class="page-title">Устройства</div>
+        </div>
+        
+        <div class="device-list-group">
+            <div class="device-list-title">Текущее устройство</div>
+            <div class="device-list-item" style="cursor: default;">
+                <div class="device-list-item-left">
+                    <i data-lucide="smartphone" style="width: 24px; height: 24px; color: var(--success);"></i>
+                    <div>
+                        <div class="device-list-item-title" id="currentDeviceName">iPhone 13 Pro</div>
+                        <div class="device-list-item-subtitle" style="color: var(--success);">Активно сейчас</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="device-list-group" style="margin-top: 24px;">
+            <div class="device-list-title">Другие устройства (1/3)</div>
+            <div class="device-list-item" id="device-pc">
+                <div class="device-list-item-left">
+                    <i data-lucide="monitor" style="width: 24px; height: 24px; color: var(--text-main);"></i>
+                    <div>
+                        <div class="device-list-item-title">Windows PC</div>
+                        <div class="device-list-item-subtitle">Был в сети: сегодня, 10:45</div>
+                    </div>
+                </div>
+                <!-- Кнопка удаления устройства -->
+                <button style="background: rgba(255, 77, 77, 0.1); border: none; color: var(--danger); width: 36px; height: 36px; border-radius: 50%; display: flex; align-items: center; justify-content: center; cursor: pointer; transition: 0.2s;" onclick="unlinkDevice('device-pc')">
+                    <i data-lucide="trash-2" style="width: 16px; height: 16px;"></i>
+                </button>
+            </div>
+        </div>
+        
+        <button class="btn btn-outline" style="margin-top: 24px;" onclick="switchTab('setup-device')">
+            <i data-lucide="plus" style="width: 20px;"></i> Подключить новое устройство
+        </button>
+    </div>
+
+    <!-- ДОКУМЕНТЫ -->
+    <div id="view-documents" class="view-container">
+        <div class="header-top">
+            <button class="back-btn" onclick="switchTab('settings')"><i data-lucide="chevron-left" style="width: 20px;"></i></button>
+            <div class="page-title">Документы</div>
+        </div>
+        <div class="doc-card">
+            <div class="doc-section">
+                <div class="doc-title">Политика конфиденциальности</div>
+                <div class="doc-date">Дата последнего обновления: 1 ноября 2025 г.</div>
+                <div class="doc-h3">1. Общие положения</div>
+                <div class="doc-p">Настоящая Политика определяет порядок обработки и защиты персональных данных пользователей Telegram-бота AFROVPN. Она разработана в соответствии с Федеральным законом РФ № 152-ФЗ «О персональных данных» и иными нормативными актами Российской Федерации. Используя сервис, пользователь подтверждает согласие с условиями Политики. При несогласии необходимо прекратить использование сервиса.</div>
+                <div class="doc-h3">2. Персональные данные, собираемые сервисом</div>
+                <div class="doc-p">Сервис осуществляет минимальный сбор данных, необходимых для предоставления услуг.</div>
+                <ul class="doc-ul">
+                    <li>Обрабатывается исключительно Telegram ID пользователя.</li>
+                    <li>Сервис не ведёт журналы активности, не собирает IP-адреса, историю подключений и передаваемый трафик.</li>
+                </ul>
+                <div class="doc-h3">3. Цели обработки данных</div>
+                <div class="doc-p">Персональные данные используются исключительно для идентификации пользователя; предоставления доступа к VPN-услугам; обратной связи и поддержки; исполнения договорных обязательств.</div>
+                <div class="doc-h3">4. Хранение и защита данных</div>
+                <ul class="doc-ul">
+                    <li>Telegram ID хранится в защищённой базе данных.</li>
+                    <li>Доступ к данным ограничен и предоставляется только уполномоченным лицам.</li>
+                    <li>При прекращении использования сервиса данные удаляются в течение 30 календарных дней.</li>
+                </ul>
+                <div class="doc-h3">5. Передача данных третьим лицам</div>
+                <div class="doc-p">Персональные данные не передаются третьим лицам, за исключением случаев, предусмотренных законодательством РФ.</div>
+                <div class="doc-h3">6. Права пользователя</div>
+                <div class="doc-p">Пользователь имеет право получать информацию об обработке своих персональных данных; требовать уточнения, блокирования или удаления данных; отзывать согласие на обработку персональных данных.</div>
+                <div class="doc-h3">7. Контактная информация</div>
+                <div class="doc-p">По вопросам обработки и защиты персональных данных: поддержка в Telegram <a class="doc-link" onclick="openSupportChat()">@afroslavyan</a></div>
+            </div>
+            <hr style="border: none; border-top: 1px solid rgba(255,255,255,0.1); margin: 30px 0;">
+            <div class="doc-section">
+                <div class="doc-title">Публичная оферта</div>
+                <div class="doc-date">Дата последнего обновления: 24 ноября 2025 г.</div>
+                <div class="doc-h3">1. Общие положения</div>
+                <div class="doc-p">Настоящая Публичная оферта является официальным предложением заключить договор возмездного оказания услуг VPN-доступа с владельцем Telegram-бота AFROVPN. В соответствии со статьёй 437 Гражданского кодекса РФ оплата услуг считается акцептом условий.</div>
+                <div class="doc-h3">2. Предмет договора</div>
+                <div class="doc-p">Исполнитель предоставляет услуги VPN-доступа для защиты интернет-соединения и обеспечения конфиденциальности. Пользователь оплачивает услуги на условиях оферты.</div>
+                <div class="doc-h3">3. Стоимость и порядок оплаты</div>
+                <div class="doc-p">Стоимость услуг (тарифы) отображаются в интерфейсе сервиса. Оплата осуществляется через платёжную систему, интегрированную в Telegram-бот.</div>
+                <div class="doc-h3">4. Условия оказания услуг</div>
+                <div class="doc-p">Услуги предоставляются круглосуточно, за исключением периодов технического обслуживания. Доступ к VPN предоставляется в течение нескольких минут после оплаты.</div>
+                <div class="doc-h3">5. Порядок возврата средств</div>
+                <div class="doc-p">Действует лояльная политика возвратов. Можно запросить возврат неиспользованных средств при неудовлетворённости качеством услуг. Возврат производится в течение 10 рабочих дней после обращения в поддержку по ссылке <a class="doc-link" onclick="openSupportChat()">@afroslavyan</a>.</div>
+                <div class="doc-h3">6. Ответственность сторон</div>
+                <div class="doc-p">Исполнитель не несёт ответственности за сбои связи и работу провайдеров; действия государственных органов; использование сервиса в незаконных целях.</div>
+                <div class="doc-h3">7. Прекращение оказания услуг</div>
+                <div class="doc-p">Пользователь вправе отказаться от услуг в любой момент. Исполнитель может приостановить предоставление услуг при нарушении условий оферты.</div>
+                <div class="doc-h3">8. Заключительные положения</div>
+                <div class="doc-p">Споры решаются переговорами, при необходимости — в судебном порядке по законодательству РФ.</div>
+                <div class="doc-h3">Контактная информация</div>
+                <div class="doc-p">Служба поддержки: <a class="doc-link" onclick="openSupportChat()">@afroslavyan</a></div>
+                <div class="doc-h3">Реквизиты исполнителя</div>
+                <div class="doc-p">Наименование: Safe Journey Lab ApS<br>Регистрационный код (CVR): 40090894<br>Адрес: Flæsketorvet 68, 1711 Copenhagen V, Denmark</div>
+            </div>
+            <hr style="border: none; border-top: 1px solid rgba(255,255,255,0.1); margin: 30px 0;">
+            <div class="doc-section">
+                <div class="doc-title">Пользовательское соглашение</div>
+                <div class="doc-date">Дата последнего обновления: 24 ноября 2025 г.</div>
+                <div class="doc-h3">1. Общие положения</div>
+                <div class="doc-p">Настоящее Пользовательское соглашение регулирует отношения между владельцем Telegram-бота AFROVPN и физическим лицом, использующим функционал сервиса.</div>
+                <div class="doc-h3">2. Предмет соглашения</div>
+                <div class="doc-p">Сервис предоставляет услуги VPN-доступа в сеть Интернет на возмездной основе.</div>
+                <div class="doc-h3">3. Условия регистрации и использования</div>
+                <div class="doc-p">Для использования сервиса необходимо авторизоваться в Telegram-боте. Идентификация осуществляется по Telegram ID.</div>
+                <div class="doc-h3">4. Подписка и порядок оплаты</div>
+                <div class="doc-p">Оплата производится через платёжную систему, интегрированную в бот. Подписка продлевается автоматически, если пользователь не отключил автопродление.</div>
+                <div class="doc-h3">5. Возврат средств</div>
+                <div class="doc-p">Сервис придерживается лояльной политики возвратов. Возврат осуществляется в течение 10 рабочих дней после обращения в поддержку.</div>
+                <div class="doc-h3">6. Ограничения и запреты</div>
+                <div class="doc-p">Пользователю запрещается использовать сервис для рассылки спама; DDoS-атак, фишинга и иных вредоносных действий; распространения вредоносного ПО.</div>
+                <div class="doc-h3">7. Реферальная программа</div>
+                <div class="doc-p">Сервис может предоставлять реферальную программу с вознаграждением за привлечение новых пользователей.</div>
+                <div class="doc-h3">8. Ответственность сторон</div>
+                <div class="doc-p">Сервис предоставляется «как есть». Исполнитель не несёт ответственности за сбои сети Интернет.</div>
+                <div class="doc-h3">9. Поддержка</div>
+                <div class="doc-p">По вопросам и обращениям: поддержка в Telegram <a class="doc-link" onclick="openSupportChat()">@afroslavyan</a></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Панель оплаты -->
+    <div id="paymentSummary" class="payment-summary">
+        <div class="summary-row"><div class="summary-label"><i data-lucide="calendar" style="width:16px;"></i> <span id="summaryMonths">12 месяцев</span></div><div class="summary-val" id="summaryPerDay">5,00 ₽ / день</div></div>
+        <div class="summary-row"><div class="summary-label"><i data-lucide="monitor" style="width:16px;"></i> <span id="summaryDevs">3 устройства</span></div><div class="summary-val" id="summaryDevCost">0,00 ₽ / день</div></div>
+        <button class="btn btn-primary payment-btn" onclick="processPayment()">
+            <span>Оплатить</span>
+            <div class="payment-btn-price">
+                <span id="summaryTotal">1799 ₽</span>
+                <span class="price-old" id="summaryOld">2388 ₽</span>
+                <span class="price-badge" id="summaryDiscount">-25%</span>
+            </div>
+        </button>
+    </div>
+
+    <!-- BOTTOM NAVIGATION -->
+    <nav class="bottom-nav" id="mainBottomNav">
+        <div class="nav-item active" data-target="home" onclick="switchTab('home')"><i data-lucide="home"></i></div>
+        <div class="nav-item" data-target="ref" onclick="switchTab('ref')"><i data-lucide="gift"></i></div>
+        <div class="nav-item" data-target="support" onclick="switchTab('support')"><i data-lucide="headphones"></i></div>
+        <div class="nav-item" data-target="settings" onclick="switchTab('settings')"><i data-lucide="settings"></i></div>
+    </nav>
+
+    <script>
+        document.addEventListener("DOMContentLoaded", () => {
+            lucide.createIcons();
+            
+            const botName = "afroVPN_bot"; 
+            let tgUserId = "000000000";
+            
+            if (window.Telegram && window.Telegram.WebApp && window.Telegram.WebApp.initDataUnsafe && window.Telegram.WebApp.initDataUnsafe.user) {
+                tgUserId = window.Telegram.WebApp.initDataUnsafe.user.id;
+            }
+            document.getElementById('refLink').value = `https://t.me/${botName}?start=${tgUserId}`;
+            
+            let deviceName = "Неизвестное устройство";
+            const ua = navigator.userAgent.toLowerCase();
+            if (/iphone/.test(ua)) deviceName = "iPhone";
+            else if (/ipad/.test(ua)) deviceName = "iPad";
+            else if (/android/.test(ua)) deviceName = "Android Устройство";
+            else if (/mac macintosh|mac os x/.test(ua)) deviceName = "MacBook / iMac";
+            else if (/windows|win32/.test(ua)) deviceName = "Windows PC";
+            else if (/linux/.test(ua)) deviceName = "Linux PC";
+            document.getElementById('currentDeviceName').innerText = deviceName;
+        });
+
+        const tg = window.Telegram?.WebApp;
+        if(tg) {
+            tg.ready();
+            tg.expand();
+            tg.setHeaderColor('#060B14');
+            tg.setBackgroundColor('#060B14');
+        }
+
+        // PAYMENT CALCULATOR
+        let currentTariff = 12;
+        let devicesCount = 3;
+
+        function selectTariff(months) {
+            if(tg?.HapticFeedback) tg.HapticFeedback.impactOccurred('light');
+            currentTariff = months;
+            document.querySelectorAll('.tariff-card').forEach(c => c.classList.remove('active'));
+            document.getElementById(`tariff-${months}`).classList.add('active');
+            updatePaymentSummary();
+        }
+
+        function updateDevices(change) {
+            if(tg?.HapticFeedback) tg.HapticFeedback.impactOccurred('light');
+            let newCount = devicesCount + change;
+            if (newCount < 1) newCount = 1;
+            if (newCount > 10) newCount = 10;
+            devicesCount = newCount;
+            document.getElementById('deviceCount').innerText = devicesCount;
+            updatePaymentSummary();
+        }
+
+        function updatePaymentSummary() {
+            let basePrice = currentTariff === 12 ? 1799 : (currentTariff === 6 ? 999 : 199);
+            let oldPrice = currentTariff === 12 ? 2388 : (currentTariff === 6 ? 1189 : 199);
+            let discount = currentTariff === 12 ? '-25%' : (currentTariff === 6 ? '-16%' : '');
+            let basePerDay = currentTariff === 12 ? '5,00' : (currentTariff === 6 ? '5,50' : '6,60');
+            
+            let extraDevices = Math.max(0, devicesCount - 3);
+            let extraCostTotal = extraDevices * 50 * currentTariff;
+            let extraPerDay = extraCostTotal > 0 ? (extraCostTotal / (currentTariff * 30)).toFixed(2).replace('.', ',') : '0,00';
+            
+            let totalPrice = basePrice + extraCostTotal;
+            
+            document.getElementById('summaryMonths').innerText = currentTariff + (currentTariff === 1 ? ' месяц' : ' месяцев');
+            document.getElementById('summaryPerDay').innerText = basePerDay + ' ₽ / день';
+            
+            let devText = devicesCount + (devicesCount === 1 ? ' устройство' : (devicesCount < 5 ? ' устройства' : ' устройств'));
+            document.getElementById('summaryDevs').innerText = devText;
+            document.getElementById('summaryDevCost').innerText = extraPerDay + ' ₽ / день';
+            
+            document.getElementById('summaryTotal').innerText = totalPrice + ' ₽';
+            
+            if(discount) {
+                document.getElementById('summaryOld').style.display = 'inline';
+                document.getElementById('summaryDiscount').style.display = 'inline';
+                document.getElementById('summaryOld').innerText = (oldPrice + extraCostTotal) + ' ₽';
+                document.getElementById('summaryDiscount').innerText = discount;
+            } else {
+                document.getElementById('summaryOld').style.display = 'none';
+                document.getElementById('summaryDiscount').style.display = 'none';
+            }
+        }
+
+        function processPayment() {
+            if(tg?.HapticFeedback) tg.HapticFeedback.impactOccurred('medium');
+            alert(`Оплата ${document.getElementById('summaryTotal').innerText} за тариф на ${currentTariff} мес. (${devicesCount} устр.)`);
+        }
+
+        // --- УМНОЕ ОПРЕДЕЛЕНИЕ УСТРОЙСТВА ---
+        function autoDetectDeviceAndSwitch() {
+            if(tg?.HapticFeedback) tg.HapticFeedback.impactOccurred('light');
+            
+            let platform = 'unknown';
+            
+            if (tg && tg.platform && tg.platform !== 'unknown') {
+                const p = tg.platform.toLowerCase();
+                if (p === 'android' || p === 'android_x') platform = 'android';
+                else if (p === 'ios') platform = 'ios';
+                else if (p === 'macos') platform = 'macos';
+            }
+            
+            if (platform === 'unknown') {
+                const ua = navigator.userAgent.toLowerCase();
+                if (/iphone|ipad|ipod/.test(ua)) platform = 'ios';
+                else if (/android/.test(ua)) platform = 'android';
+                else if (/mac macintosh|mac os x/.test(ua)) platform = 'macos';
+                else if (/windows|win32/.test(ua)) platform = 'windows';
+                else if (/linux/.test(ua)) platform = 'linux';
+            }
+            
+            if (platform === 'ios') switchTab('setup-ios');
+            else if (platform === 'android') switchTab('setup-android');
+            else if (platform === 'macos') switchTab('setup-macos');
+            else if (platform === 'windows') switchTab('setup-windows');
+            else if (platform === 'linux') switchTab('setup-linux');
+            else switchTab('setup-app');
+        }
+
+        function selectDeviceOption(type) {
+            if(tg?.HapticFeedback) tg.HapticFeedback.impactOccurred('light');
+            document.getElementById('devThis').classList.remove('active');
+            document.getElementById('devOther').classList.remove('active');
+            
+            document.getElementById('iconThis').style.color = 'var(--text-muted)';
+            document.getElementById('iconOther').style.color = 'var(--text-muted)';
+
+            const nextBtn = document.getElementById('setupDeviceNextBtn');
+
+            if(type === 'this') {
+                document.getElementById('devThis').classList.add('active');
+                document.getElementById('iconThis').style.color = 'var(--primary)';
+                nextBtn.textContent = 'Настроить на этом устройстве';
+                nextBtn.onclick = () => autoDetectDeviceAndSwitch(); 
+            } else {
+                document.getElementById('devOther').classList.add('active');
+                document.getElementById('iconOther').style.color = 'var(--primary)';
+                nextBtn.textContent = 'Настроить на другом устройстве';
+                nextBtn.onclick = () => switchTab('setup-other'); 
+            }
+        }
+
+        function copyKeyText() {
+            if(tg?.HapticFeedback) tg.HapticFeedback.impactOccurred('medium');
+            const key = document.getElementById('userKeyText').innerText;
+            navigator.clipboard.writeText(key).then(() => alert('Ключ скопирован в буфер обмена!'));
+        }
+        function copyKeyTextOther() {
+            if(tg?.HapticFeedback) tg.HapticFeedback.impactOccurred('medium');
+            const key = document.getElementById('userKeyTextOther').innerText;
+            navigator.clipboard.writeText(key).then(() => alert('Ключ скопирован в буфер обмена!'));
+        }
+
+        function addToApp() {
+            if(tg?.HapticFeedback) tg.HapticFeedback.impactOccurred('medium');
+            const key = document.getElementById('userKeyText').innerText;
+            window.location.href = `happ://add/${key}`;
+            setTimeout(() => {
+                alert('Если приложение не открылось автоматически, ключ скопирован в буфер обмена.');
+                navigator.clipboard.writeText(key);
+            }, 500);
+        }
+        
+        function unlinkDevice(id) {
+            if(tg?.HapticFeedback) tg.HapticFeedback.impactOccurred('medium');
+            if(confirm('Вы уверены, что хотите отключить это устройство?')) {
+                document.getElementById(id).style.display = 'none';
+            }
+        }
+
+        // Навигация
+        function switchTab(tabId) {
+            if(tg?.HapticFeedback) tg.HapticFeedback.impactOccurred('light');
+            document.querySelectorAll('.view-container').forEach(el => el.classList.remove('active'));
+            const targetView = document.getElementById('view-' + tabId);
+            if(targetView) targetView.classList.add('active');
+            
+            if(tabId === 'payment') {
+                document.getElementById('mainBottomNav').style.display = 'none';
+                document.getElementById('paymentSummary').classList.add('show');
+                if(targetView) targetView.style.paddingBottom = '180px';
+                updatePaymentSummary();
+            } else if (tabId === 'documents' || tabId === 'notifications' || tabId === 'devices') {
+                document.getElementById('mainBottomNav').style.display = 'none';
+                document.getElementById('paymentSummary').classList.remove('show');
+                if(targetView) targetView.style.paddingBottom = '40px';
+            } else if (tabId.startsWith('setup-')) {
+                document.getElementById('mainBottomNav').style.display = 'none';
+                document.getElementById('paymentSummary').classList.remove('show');
+                if(targetView) targetView.style.paddingBottom = '40px';
+            } else {
+                document.getElementById('mainBottomNav').style.display = 'flex';
+                document.getElementById('paymentSummary').classList.remove('show');
+                document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
+                const activeNav = document.querySelector(`.nav-item[data-target="${tabId}"]`);
+                if(activeNav) activeNav.classList.add('active');
+            }
+            window.scrollTo(0, 0);
+        }
+
+        const faqData = {
+            1: { title: "VPN не подключается", text: "Проверьте подключение к интернету и попробуйте сменить локацию. Если проблема сохраняется - перезапустите приложение" },
+            2: { title: "Как установить VPN?", text: "Откройте раздел \"Настройка VPN\" скачайте приложение и импортируйте ключ доступа" },
+            3: { title: "Интернет стал медленнее", text: "Скорость может зависеть от выбранной локации. Попробуйте подключиться к ближайшему серверу" },
+            4: { title: "Нашли баг или ошибку?", text: "Опишите проблему в чате поддержки — мы постараемся помочь как можно быстрее" }
+        };
+
+        function openModal(id) {
+            if(tg?.HapticFeedback) tg.HapticFeedback.impactOccurred('light');
+            document.getElementById('modalTitle').textContent = faqData[id].title;
+            document.getElementById('modalText').textContent = faqData[id].text;
+            document.getElementById('faqModal').classList.add('show');
+        }
+
+        function openEmailModal() {
+            if(tg?.HapticFeedback) tg.HapticFeedback.impactOccurred('light');
+            document.getElementById('emailModalBody').innerHTML = `
+                <h3 class="modal-title" style="margin-bottom: 12px; font-size: 22px;">Введите электронную почту</h3>
+                <p class="modal-text" id="emailModalDesc">На неё придёт код для подтверждения</p>
+                <input type="email" class="modal-input" placeholder="name@example.com" id="emailInput">
+                <button type="button" class="btn btn-primary" onclick="handleEmailModalAction(event)" id="emailActionBtn">Отправить код</button>
+            `;
+            document.getElementById('emailModal').classList.add('show');
+        }
+
+        function closeModal(event) {
+            if(!event || event.target.classList.contains('modal-overlay') || event.currentTarget.classList.contains('modal-close')) {
+                document.querySelectorAll('.modal-overlay').forEach(modal => modal.classList.remove('show'));
+            }
+        }
+
+        const API_URL = "http://127.0.0.1:8000"; 
+        let globalEmail = "";
+        let currentModalStep = 1;
+
+        async function handleEmailModalAction(event) {
+            if (event) event.preventDefault();
+            
+            if (currentModalStep === 1) {
+                const emailInput = document.getElementById('emailInput').value.trim();
+                const btn = document.getElementById('emailActionBtn');
+                
+                if(!emailInput || !emailInput.includes('@')) { 
+                    alert('Введите корректный email'); 
+                    return; 
+                }
+                
+                let userId = "test_user";
+                if (window.Telegram?.WebApp?.initDataUnsafe?.user) {
+                    userId = String(window.Telegram.WebApp.initDataUnsafe.user.id);
+                }
+
+                btn.textContent = 'Отправка...'; 
+                btn.disabled = true;
+                
+                try {
+                    const response = await fetch(`${API_URL}/send-code`, {
+                        method: "POST",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify({ tg_id: userId, email: emailInput })
+                    });
+
+                    const result = await response.json();
+
+                    if (response.ok) {
+                        globalEmail = emailInput;
+                        currentModalStep = 2;
+                        document.getElementById('emailModalBody').innerHTML = `
+                            <h3 class="modal-title" style="margin-bottom: 12px; font-size: 22px;">Введите код</h3>
+                            <p class="modal-text">Мы отправили 6-значный код на ${emailInput}</p>
+                            <input type="text" class="modal-input" placeholder="• • • • • •" id="codeInput" maxlength="6" style="text-align: center; font-size: 24px; letter-spacing: 8px;">
+                            <button type="button" class="btn btn-primary" onclick="handleEmailModalAction(event)" id="emailActionBtn">Подтвердить</button>
+                        `;
+                    } else {
+                        alert("Ошибка сервера: " + (result.detail || "Не удалось отправить"));
+                        btn.textContent = 'Отправить код'; 
+                        btn.disabled = false;
+                    }
+                } catch (error) { 
+                    console.error(error);
+                    alert('Ошибка сети: не удалось подключиться к серверу API.'); 
+                    btn.textContent = 'Отправить код'; 
+                    btn.disabled = false;
+                }
+            } else {
+                const codeInput = document.getElementById('codeInput').value.trim();
+                const btn = document.getElementById('emailActionBtn');
+
+                if(codeInput.length < 6) { 
+                    alert('Введите код полностью'); 
+                    return; 
+                }
+
+                let userId = "test_user";
+                if (window.Telegram?.WebApp?.initDataUnsafe?.user) {
+                    userId = String(window.Telegram.WebApp.initDataUnsafe.user.id);
+                }
+
+                btn.textContent = 'Проверка...'; 
+                btn.disabled = true;
+                
+                try {
+                    const response = await fetch(`${API_URL}/verify-code`, {
+                        method: "POST",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify({ tg_id: userId, code: codeInput })
+                    });
+
+                    const result = await response.json();
+                    if (response.ok && result.success) {
+                        alert('Почта успешно привязана!');
+                        document.getElementById('emailModal').classList.remove('show');
+                        currentModalStep = 1; 
+                        document.querySelector('.settings-row-subtitle').textContent = globalEmail;
+                        document.querySelector('.settings-action.primary').innerHTML = '<div class="check-circle"><i data-lucide="check" style="width: 20px;"></i></div>';
+                        lucide.createIcons();
+                    } else {
+                        alert(result.detail || "Неверный код");
+                        btn.textContent = 'Подтвердить'; 
+                        btn.disabled = false;
+                    }
+                } catch (error) { 
+                    console.error(error);
+                    alert('Ошибка соединения с сервером.'); 
+                    btn.textContent = 'Подтвердить'; 
+                    btn.disabled = false;
+                }
+            }
+        }
+    </script>
+</body>
+</html>
