@@ -852,7 +852,7 @@
         <div class="detailed-stats-link">Подробная статистика <i data-lucide="external-link" style="width: 16px; height: 16px;"></i></div>
         <div class="link-section-title">Ваша ссылка для Telegram</div>
         <div class="link-input-wrap">
-            <input type="text" class="link-input" value="https://t.me/afroVPN_bot?start=" readonly id="refLink">
+            <input type="text" class="link-input" value="https://t.me/afroslavyanVPN_bot?start=" readonly id="refLink">
             <button class="link-copy-btn" onclick="copyLink()"><i data-lucide="copy" style="width: 18px; height: 18px;"></i></button>
         </div>
     </div>
@@ -914,7 +914,7 @@
                 <div class="settings-row">
                     <div class="settings-row-left">
                         <div class="settings-icon" style="background:transparent; color: var(--text-main);"><i data-lucide="send" style="width: 24px; fill: var(--text-main);"></i></div>
-                        <div><div class="settings-row-title">Telegram</div><div class="settings-row-subtitle">id: 883071272</div></div>
+                        <div><div class="settings-row-title">Telegram</div><div class="settings-row-subtitle" id="tgUserIdDisplay">id: загрузка...</div></div>
                     </div>
                     <div class="settings-action"><div class="check-circle"><i data-lucide="check" style="width: 14px;"></i></div></div>
                 </div>
@@ -943,15 +943,15 @@
         <div class="settings-block">
             <div class="settings-row">
                 <div class="settings-row-left"><div class="settings-row-title">Окончание подписки</div></div>
-                <label class="switch"><input type="checkbox" checked><span class="slider"></span></label>
+                <label class="switch"><input type="checkbox" id="notifSub" checked onchange="saveNotificationSettings()"><span class="slider"></span></label>
             </div>
             <div class="settings-row">
                 <div class="settings-row-left"><div class="settings-row-title">Новости и обновления</div></div>
-                <label class="switch"><input type="checkbox" checked><span class="slider"></span></label>
+                <label class="switch"><input type="checkbox" id="notifNews" checked onchange="saveNotificationSettings()"><span class="slider"></span></label>
             </div>
             <div class="settings-row" style="border-bottom: none;">
                 <div class="settings-row-left"><div class="settings-row-title">Акции и предложения</div></div>
-                <label class="switch"><input type="checkbox"><span class="slider"></span></label>
+                <label class="switch"><input type="checkbox" id="notifPromo" onchange="saveNotificationSettings()"><span class="slider"></span></label>
             </div>
         </div>
         <p style="font-size: 13px; color: var(--text-muted); margin-top: 12px; padding: 0 12px; line-height: 1.4;">Управляйте тем, какие уведомления вы хотите получать от нашего бота.</p>
@@ -1060,13 +1060,16 @@
         document.addEventListener("DOMContentLoaded", () => {
             lucide.createIcons();
             
-            const botName = "afroVPN_bot"; 
+            const botName = "afroslavyanVPN_bot"; // Исправлено имя бота
             let tgUserId = "000000000";
             
             if (window.Telegram && window.Telegram.WebApp && window.Telegram.WebApp.initDataUnsafe && window.Telegram.WebApp.initDataUnsafe.user) {
                 tgUserId = window.Telegram.WebApp.initDataUnsafe.user.id;
             }
             document.getElementById('refLink').value = `https://t.me/${botName}?start=${tgUserId}`;
+            
+            // Вывод реального ID в настройках
+            document.getElementById('tgUserIdDisplay').innerText = `id: ${tgUserId}`;
             
             let deviceName = "Неизвестное устройство";
             const ua = navigator.userAgent.toLowerCase();
@@ -1311,6 +1314,30 @@
             if(tg?.HapticFeedback) tg.HapticFeedback.impactOccurred('medium');
             if(confirm('Вы уверены, что хотите отключить это устройство?')) {
                 document.getElementById(id).style.display = 'none';
+            }
+        }
+
+        async function saveNotificationSettings() {
+            let userId = "test_user";
+            if (window.Telegram?.WebApp?.initDataUnsafe?.user) {
+                userId = String(window.Telegram.WebApp.initDataUnsafe.user.id);
+            }
+
+            const settings = {
+                tg_id: userId,
+                subscription_alerts: document.getElementById('notifSub').checked,
+                news_alerts: document.getElementById('notifNews').checked,
+                promo_alerts: document.getElementById('notifPromo').checked
+            };
+
+            try {
+                await fetch(`${API_URL}/update-notifications`, {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify(settings)
+                });
+            } catch (e) {
+                console.error("Не удалось сохранить настройки уведомлений", e);
             }
         }
 
