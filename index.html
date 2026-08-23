@@ -504,7 +504,7 @@
         </div>
     </div>
 
-    <!-- ОКНО: Выбор приложения (setup-app) -->
+    <!-- ОКНО: Выбор приложения (setup-app - Универсальное) -->
     <div id="view-setup-app" class="view-container">
         <div class="header-top">
             <button class="back-btn" onclick="switchTab('setup-device')"><i data-lucide="chevron-left" style="width: 20px;"></i></button>
@@ -607,16 +607,167 @@
         </div>
     </div>
 
-    <!-- Устройства индивидуальные (оставляем стаббинг для переходов) -->
-    <div id="view-setup-ios" class="view-container"><div class="header-top"><button class="back-btn" onclick="switchTab('setup-other')"><i data-lucide="chevron-left" style="width: 20px;"></i></button></div></div>
-    <div id="view-setup-android" class="view-container"><div class="header-top"><button class="back-btn" onclick="switchTab('setup-other')"><i data-lucide="chevron-left" style="width: 20px;"></i></button></div></div>
-    <div id="view-setup-macos" class="view-container"><div class="header-top"><button class="back-btn" onclick="switchTab('setup-other')"><i data-lucide="chevron-left" style="width: 20px;"></i></button></div></div>
-    <div id="view-setup-tv" class="view-container"><div class="header-top"><button class="back-btn" onclick="switchTab('setup-other')"><i data-lucide="chevron-left" style="width: 20px;"></i></button></div></div>
-    <div id="view-setup-windows" class="view-container"><div class="header-top"><button class="back-btn" onclick="switchTab('setup-other')"><i data-lucide="chevron-left" style="width: 20px;"></i></button></div></div>
-    <div id="view-setup-linux" class="view-container"><div class="header-top"><button class="back-btn" onclick="switchTab('setup-other')"><i data-lucide="chevron-left" style="width: 20px;"></i></button></div></div>
-    <div id="view-setup-chrome" class="view-container"><div class="header-top"><button class="back-btn" onclick="switchTab('setup-other')"><i data-lucide="chevron-left" style="width: 20px;"></i></button></div></div>
-    <div id="view-setup-key" class="view-container"><div class="header-top"><button class="back-btn" onclick="switchTab('setup-app')"><i data-lucide="chevron-left" style="width: 20px;"></i></button></div></div>
-    <div id="view-setup-done" class="view-container"><div class="header-top"><button class="back-btn" onclick="switchTab('setup-key')"><i data-lucide="chevron-left" style="width: 20px;"></i></button></div></div>
+    <!-- ИНДИВИДУАЛЬНЫЕ ОКНА УСТРОЙСТВ (ПОЛНЫЙ КОПИПЕЙСТ С ИНСТРУКЦИЯМИ) -->
+    <!-- iOS -->
+    <div id="view-setup-ios" class="view-container">
+        <div class="header-top"><button class="back-btn" onclick="switchTab('setup-other')"><i data-lucide="chevron-left" style="width: 20px;"></i></button></div>
+        <div class="setup-screen" style="padding-top:0;">
+            <div class="setup-icon-box"><i data-lucide="apple" style="width: 32px; height: 32px; color: var(--primary);"></i></div>
+            <h2 class="setup-title" style="margin-bottom: 30px;">Настроить на iOS</h2>
+            <div class="setup-step">
+                <div class="setup-step-header"><div class="setup-step-num">1</div><div class="setup-step-title">Скачайте приложение HAPP</div></div>
+                <div class="setup-step-desc">Установите наше приложение на устройство, чтобы подключить VPN</div>
+                <button class="btn btn-white" onclick="window.open('https://apps.apple.com/', '_blank')"><i data-lucide="download" style="width: 18px; height: 18px;"></i> App Store</button>
+            </div>
+            <div class="setup-step">
+                <div class="setup-step-header"><div class="setup-step-num">2</div><div class="setup-step-title">Добавьте ключ-ссылку</div></div>
+                <div class="setup-step-desc">Скопируйте ссылку и вставьте её на экране подключения</div>
+                <div class="key-box" onclick="copyKeyTextOther()"><span class="key-text">https://subs.eu-fffast.com/fe5766cfe9c3a467</span></div>
+                <button class="btn btn-white" style="margin-top: 12px;" onclick="copyKeyTextOther()"><i data-lucide="paperclip" style="width: 18px; height: 18px;"></i> Скопировать ключ-ссылку</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Android -->
+    <div id="view-setup-android" class="view-container">
+        <div class="header-top"><button class="back-btn" onclick="switchTab('setup-other')"><i data-lucide="chevron-left" style="width: 20px;"></i></button></div>
+        <div class="setup-screen" style="padding-top:0;">
+            <div class="setup-icon-box"><i data-lucide="play" style="width: 32px; height: 32px; color: var(--primary);"></i></div>
+            <h2 class="setup-title" style="margin-bottom: 30px;">Настроить на Android</h2>
+            <div class="setup-step">
+                <div class="setup-step-header"><div class="setup-step-num">1</div><div class="setup-step-title">Скачайте приложение HAPP</div></div>
+                <div class="setup-step-desc">Установите наше приложение на устройство</div>
+                <button class="btn btn-white" onclick="window.open('https://play.google.com/', '_blank')"><i data-lucide="download" style="width: 18px; height: 18px;"></i> Google Play</button>
+            </div>
+            <div class="setup-step">
+                <div class="setup-step-header"><div class="setup-step-num">2</div><div class="setup-step-title">Добавьте ключ-ссылку</div></div>
+                <div class="key-box" onclick="copyKeyTextOther()"><span class="key-text">https://subs.eu-fffast.com/fe5766cfe9c3a467</span></div>
+                <button class="btn btn-white" style="margin-top: 12px;" onclick="copyKeyTextOther()"><i data-lucide="paperclip" style="width: 18px; height: 18px;"></i> Скопировать ключ-ссылку</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- macOS -->
+    <div id="view-setup-macos" class="view-container">
+        <div class="header-top"><button class="back-btn" onclick="switchTab('setup-other')"><i data-lucide="chevron-left" style="width: 20px;"></i></button></div>
+        <div class="setup-screen" style="padding-top:0;">
+            <div class="setup-icon-box"><i data-lucide="monitor" style="width: 32px; height: 32px; color: var(--primary);"></i></div>
+            <h2 class="setup-title" style="margin-bottom: 30px;">Настроить на macOS</h2>
+            <div class="setup-step">
+                <div class="setup-step-header"><div class="setup-step-num">1</div><div class="setup-step-title">Скачайте приложение HAPP</div></div>
+                <button class="btn btn-white" onclick="window.open('https://apps.apple.com/', '_blank')"><i data-lucide="download" style="width: 18px; height: 18px;"></i> App Store</button>
+            </div>
+            <div class="setup-step">
+                <div class="setup-step-header"><div class="setup-step-num">2</div><div class="setup-step-title">Добавьте ключ-ссылку</div></div>
+                <div class="key-box" onclick="copyKeyTextOther()"><span class="key-text">https://subs.eu-fffast.com/fe5766cfe9c3a467</span></div>
+                <button class="btn btn-white" style="margin-top: 12px;" onclick="copyKeyTextOther()"><i data-lucide="paperclip" style="width: 18px; height: 18px;"></i> Скопировать ключ-ссылку</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- TV -->
+    <div id="view-setup-tv" class="view-container">
+        <div class="header-top"><button class="back-btn" onclick="switchTab('setup-other')"><i data-lucide="chevron-left" style="width: 20px;"></i></button></div>
+        <div class="setup-screen" style="padding-top:0;">
+            <div class="setup-icon-box"><i data-lucide="tv" style="width: 32px; height: 32px; color: var(--primary);"></i></div>
+            <h2 class="setup-title" style="margin-bottom: 30px;">Настроить на TV</h2>
+            <div class="setup-step">
+                <div class="setup-step-header"><div class="setup-step-num">1</div><div class="setup-step-title">Скачайте .apk файл</div></div>
+                <button class="btn btn-white" onclick="window.open('https://github.com/Happ-proxy/happ-android/releases/latest/download/Happ.apk', '_blank')"><i data-lucide="download" style="width: 18px; height: 18px;"></i> Скачать .apk</button>
+            </div>
+            <div class="setup-step">
+                <div class="setup-step-header"><div class="setup-step-num">2</div><div class="setup-step-title">Добавьте ключ-ссылку</div></div>
+                <div class="key-box" onclick="copyKeyTextOther()"><span class="key-text">https://subs.eu-fffast.com/fe5766cfe9c3a467</span></div>
+                <button class="btn btn-white" style="margin-top: 12px;" onclick="copyKeyTextOther()"><i data-lucide="paperclip" style="width: 18px; height: 18px;"></i> Скопировать ключ-ссылку</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Windows -->
+    <div id="view-setup-windows" class="view-container">
+        <div class="header-top"><button class="back-btn" onclick="switchTab('setup-other')"><i data-lucide="chevron-left" style="width: 20px;"></i></button></div>
+        <div class="setup-screen" style="padding-top:0;">
+            <div class="setup-icon-box"><i data-lucide="layout-dashboard" style="width: 32px; height: 32px; color: var(--primary);"></i></div>
+            <h2 class="setup-title" style="margin-bottom: 30px;">Настроить на Windows</h2>
+            <div class="setup-step">
+                <div class="setup-step-header"><div class="setup-step-num">1</div><div class="setup-step-title">Скачайте .exe файл</div></div>
+                <button class="btn btn-white" onclick="window.open('https://github.com/Happ-proxy/happ-desktop/releases/latest/download/setup-Happ.x64.exe', '_blank')"><i data-lucide="download" style="width: 18px; height: 18px;"></i> Скачать .exe</button>
+            </div>
+            <div class="setup-step">
+                <div class="setup-step-header"><div class="setup-step-num">2</div><div class="setup-step-title">Добавьте ключ-ссылку</div></div>
+                <div class="key-box" onclick="copyKeyTextOther()"><span class="key-text">https://subs.eu-fffast.com/fe5766cfe9c3a467</span></div>
+                <button class="btn btn-white" style="margin-top: 12px;" onclick="copyKeyTextOther()"><i data-lucide="paperclip" style="width: 18px; height: 18px;"></i> Скопировать ключ-ссылку</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Linux -->
+    <div id="view-setup-linux" class="view-container">
+        <div class="header-top"><button class="back-btn" onclick="switchTab('setup-other')"><i data-lucide="chevron-left" style="width: 20px;"></i></button></div>
+        <div class="setup-screen" style="padding-top:0;">
+            <div class="setup-icon-box"><i data-lucide="terminal" style="width: 32px; height: 32px; color: var(--primary);"></i></div>
+            <h2 class="setup-title" style="margin-bottom: 30px;">Настроить на Linux</h2>
+            <div class="setup-step">
+                <div class="setup-step-header"><div class="setup-step-num">1</div><div class="setup-step-title">Скачайте приложение</div></div>
+                <button class="btn btn-white" onclick="window.open('https://github.com/Happ-proxy/happ-desktop/releases/latest/download/Happ.linux.arm64.deb', '_blank')"><i data-lucide="download" style="width: 18px; height: 18px;"></i> Скачать</button>
+            </div>
+            <div class="setup-step">
+                <div class="setup-step-header"><div class="setup-step-num">2</div><div class="setup-step-title">Добавьте ключ-ссылку</div></div>
+                <div class="key-box" onclick="copyKeyTextOther()"><span class="key-text">https://subs.eu-fffast.com/fe5766cfe9c3a467</span></div>
+                <button class="btn btn-white" style="margin-top: 12px;" onclick="copyKeyTextOther()"><i data-lucide="paperclip" style="width: 18px; height: 18px;"></i> Скопировать ключ-ссылку</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Chrome -->
+    <div id="view-setup-chrome" class="view-container">
+        <div class="header-top"><button class="back-btn" onclick="switchTab('setup-other')"><i data-lucide="chevron-left" style="width: 20px;"></i></button></div>
+        <div class="setup-screen" style="padding-top:0;">
+            <div class="setup-icon-box"><i data-lucide="chrome" style="width: 32px; height: 32px; color: var(--primary);"></i></div>
+            <h2 class="setup-title" style="margin-bottom: 30px;">Настроить в Chrome</h2>
+            <div class="setup-step">
+                <div class="setup-step-header"><div class="setup-step-num">1</div><div class="setup-step-title">Установите расширение</div></div>
+                <button class="btn btn-white" onclick="window.open('https://happ-proxy.com/', '_blank')"><i data-lucide="download" style="width: 18px; height: 18px;"></i> Загрузить</button>
+            </div>
+            <div class="setup-step">
+                <div class="setup-step-header"><div class="setup-step-num">2</div><div class="setup-step-title">Добавьте ключ-ссылку</div></div>
+                <div class="key-box" onclick="copyKeyTextOther()"><span class="key-text">https://subs.eu-fffast.com/fe5766cfe9c3a467</span></div>
+                <button class="btn btn-white" style="margin-top: 12px;" onclick="copyKeyTextOther()"><i data-lucide="paperclip" style="width: 18px; height: 18px;"></i> Скопировать ключ-ссылку</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ОКНО 3: Ваш ключ (setup-key) -->
+    <div id="view-setup-key" class="view-container">
+        <div class="header-top"><button class="back-btn" onclick="switchTab('setup-app')"><i data-lucide="chevron-left" style="width: 20px;"></i></button></div>
+        <div class="setup-screen">
+            <div class="setup-icon-box"><i data-lucide="link" style="width: 32px; height: 32px; color: var(--primary);"></i></div>
+            <h2 class="setup-title">Ваш ключ</h2>
+            <p class="setup-desc">Нажмите «Добавить в приложение», чтобы автоматически добавить ключ</p>
+            <div class="key-box" onclick="copyKeyText()">
+                <span class="key-text" id="userKeyText">https://subs.eu-fffast.com/fe5766cfe9c3a467</span>
+                <i data-lucide="copy" style="width: 18px; height: 18px; color: var(--primary);"></i>
+            </div>
+            <div style="margin-top: auto;">
+                <button class="btn btn-white" style="margin-bottom: 12px;" onclick="addToApp()"><i data-lucide="external-link" style="width: 18px; height: 18px;"></i> Добавить в приложение</button>
+                <button class="btn btn-dark" onclick="switchTab('setup-done')">Завершить</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ОКНО 4: Готово! (setup-done) -->
+    <div id="view-setup-done" class="view-container">
+        <div class="header-top"><button class="back-btn" onclick="switchTab('setup-key')"><i data-lucide="chevron-left" style="width: 20px;"></i></button></div>
+        <div class="setup-screen">
+            <div class="setup-icon-box" style="background: rgba(16,185,129,0.15); border-color: rgba(16,185,129,0.3); color: var(--success);"><i data-lucide="check" style="width: 32px; height: 32px;"></i></div>
+            <h2 class="setup-title">Готово!</h2>
+            <p class="setup-desc">Поздравляем, VPN подключен — пользуйтесь интернетом без ограничений</p>
+            <div style="margin-top: auto;">
+                <button class="btn btn-white" style="margin-bottom: 12px;" onclick="switchTab('home')">На главную</button>
+                <button class="btn btn-dark" onclick="switchTab('setup-device')">Добавить ещё устройство</button>
+            </div>
+        </div>
+    </div>
 
     <!-- ТАБ: ОПЛАТА -->
     <div id="view-payment" class="view-container">
@@ -747,7 +898,7 @@
         </div>
     </div>
 
-    <!-- Уведомления и устройства (заглушки экранов) -->
+    <!-- Уведомления и устройства -->
     <div id="view-notifications" class="view-container">
         <div class="header-top"><button class="back-btn" onclick="switchTab('settings')"><i data-lucide="chevron-left" style="width: 20px;"></i></button><div class="page-title">Уведомления</div></div>
         <div class="settings-block">
@@ -784,7 +935,6 @@
     <script>
         const API_URL = "https://vpn-mini-app.onrender.com"; 
 
-        // СЛОВАРЬ МУЛЬТИЯЗЫЧНОСТИ (RU / EN)
         let currentLang = "ru";
         const translations = {
             ru: {
