@@ -3,26 +3,26 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>VPN App - Blue Theme</title>
+    <title>VPN App - Gray & Dark Theme</title>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <script src="https://unpkg.com/lucide@latest"></script>
     <style>
         :root {
-            --bg-base: #060B14;
-            --bg-glow: #003b73;
-            --bg-card: #111A26;
-            --bg-card-highlight: #1A2636;
+            --bg-base: #121418;
+            --bg-glow: #2C2F38;
+            --bg-card: #1A1D24;
+            --bg-card-highlight: #2A2E38;
             
-            --primary: #0088FF;
-            --primary-hover: #0077E6;
-            --primary-transparent: rgba(0, 136, 255, 0.15);
+            --primary: #E5E7EB;
+            --primary-hover: #D1D5DB;
+            --primary-transparent: rgba(229, 231, 235, 0.12);
             
             --text-main: #FFFFFF;
-            --text-muted: #8E9BAE;
-            --text-dark: #000000;
+            --text-muted: #9CA3AF;
+            --text-dark: #121418;
             
-            --danger: #FF4D4D;
-            --success: #00C853;
+            --danger: #EF4444;
+            --success: #10B981;
             
             --radius-xl: 24px;
             --radius-lg: 18px;
@@ -45,7 +45,7 @@
             background-color: var(--bg-base);
             color: var(--text-main);
             min-height: 100vh;
-            background-image: radial-gradient(circle at 50% 0%, var(--bg-glow) 0%, var(--bg-base) 60%);
+            background-image: radial-gradient(circle at 50% 0%, var(--bg-glow) 0%, var(--bg-base) 65%);
             background-attachment: fixed;
             background-repeat: no-repeat;
             overflow-x: hidden;
@@ -54,11 +54,11 @@
         .view-container {
             display: none;
             padding: 16px 16px calc(var(--nav-height) + var(--safe-bottom) + 24px);
-            animation: fadeIn 0.3s ease;
+            animation: fadeIn 0.3s cubic-bezier(0.16, 1, 0.3, 1);
         }
         .view-container.active { display: block; }
         @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(10px); }
+            from { opacity: 0; transform: translateY(8px); }
             to { opacity: 1; transform: translateY(0); }
         }
 
@@ -72,12 +72,16 @@
             width: 40px; height: 40px;
             border-radius: 50%;
             background: var(--bg-card);
-            border: none; color: var(--text-main);
+            border: 1px solid rgba(255,255,255,0.08); color: var(--text-main);
             display: flex; align-items: center; justify-content: center;
             cursor: pointer; margin-right: 12px;
+            transition: transform 0.2s ease, background-color 0.2s ease;
         }
+        .back-btn:active { transform: scale(0.92); }
+
         .page-title {
             background: var(--bg-card);
+            border: 1px solid rgba(255,255,255,0.08);
             padding: 10px 20px;
             border-radius: 100px;
             font-size: 15px; font-weight: 700;
@@ -85,6 +89,7 @@
 
         .card {
             background: var(--bg-card);
+            border: 1px solid rgba(255,255,255,0.08);
             border-radius: var(--radius-xl);
             padding: 20px; margin-bottom: 16px;
             position: relative; overflow: hidden;
@@ -96,13 +101,13 @@
             font-size: 15px; font-weight: 700;
             border: none; cursor: pointer;
             display: flex; align-items: center; justify-content: center;
-            gap: 10px; transition: transform 0.1s, opacity 0.2s;
+            gap: 10px; transition: transform 0.15s ease, opacity 0.2s ease, background-color 0.2s ease;
         }
         .btn:active { transform: scale(0.97); opacity: 0.9; }
         
-        .btn-primary { background: var(--primary); color: var(--text-main); }
+        .btn-primary { background: var(--primary); color: var(--text-dark); }
         .btn-white { background: var(--text-main); color: var(--text-dark); }
-        .btn-dark { background: rgba(255,255,255,0.05); color: var(--text-main); }
+        .btn-dark { background: rgba(255,255,255,0.08); color: var(--text-main); border: 1px solid rgba(255,255,255,0.06); }
         .btn-outline { background: transparent; border: 1px solid var(--primary); color: var(--primary); }
 
         /* --- HOME TAB --- */
@@ -113,21 +118,24 @@
             color: var(--danger); font-size: 13px; font-weight: 500; margin-bottom: 16px;
         }
         .pills-row { display: flex; justify-content: center; gap: 10px; margin-bottom: 30px; }
-        .pill { background: var(--bg-card); padding: 8px 16px; border-radius: 100px; font-size: 13px; font-weight: 600; }
+        .pill { background: var(--bg-card); border: 1px solid rgba(255,255,255,0.08); padding: 8px 16px; border-radius: 100px; font-size: 13px; font-weight: 600; color: var(--text-muted); }
 
         .home-actions { display: flex; flex-direction: column; gap: 12px; margin-bottom: 24px; }
         .home-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
         .grid-card {
-            background: var(--bg-card); border-radius: var(--radius-xl);
+            background: var(--bg-card); border: 1px solid rgba(255,255,255,0.08); border-radius: var(--radius-xl);
             padding: 16px; height: 160px; position: relative; display: flex;
             flex-direction: column; justify-content: space-between; overflow: hidden;
-            background-image: linear-gradient(180deg, rgba(0, 136, 255, 0.05) 0%, rgba(17, 26, 38, 1) 100%);
+            background-image: linear-gradient(180deg, rgba(255, 255, 255, 0.03) 0%, rgba(26, 29, 36, 1) 100%);
+            transition: transform 0.2s ease, border-color 0.2s ease;
+            cursor: pointer;
         }
+        .grid-card:active { transform: scale(0.97); border-color: rgba(255,255,255,0.2); }
         .grid-card h3 { font-size: 16px; font-weight: 800; z-index: 2; }
         .grid-icon-wrapper {
             position: absolute; bottom: -10px; right: -10px;
             width: 100px; height: 100px; display: flex; align-items: center; justify-content: center;
-            opacity: 0.8; filter: drop-shadow(0 0 20px rgba(0,136,255,0.4));
+            opacity: 0.5; filter: drop-shadow(0 0 20px rgba(255,255,255,0.1));
         }
         .grid-btn {
             width: 36px; height: 36px; background: rgba(255,255,255,0.1); border-radius: 50%;
@@ -137,7 +145,7 @@
         /* --- SETUP FLOW SCREENS --- */
         .setup-screen { text-align: center; padding-top: 10px; display: flex; flex-direction: column; min-height: 70vh;}
         .setup-icon-box {
-            width: 80px; height: 80px; border-radius: 50%; background: rgba(255,255,255,0.05);
+            width: 80px; height: 80px; border-radius: 50%; background: var(--bg-card);
             border: 1px solid rgba(255,255,255,0.1); display: flex; align-items: center; justify-content: center;
             margin: 0 auto 20px; color: var(--text-main);
         }
@@ -145,11 +153,12 @@
         .setup-desc { font-size: 14px; color: var(--text-muted); margin-bottom: 24px; line-height: 1.4; }
 
         .device-option-card {
-            background: var(--bg-card); border: 2px solid transparent; border-radius: var(--radius-xl);
+            background: var(--bg-card); border: 2px solid rgba(255,255,255,0.08); border-radius: var(--radius-xl);
             padding: 16px 20px; margin-bottom: 12px; display: flex; align-items: center; justify-content: space-between;
-            cursor: pointer; text-align: left; transition: 0.2s;
+            cursor: pointer; text-align: left; transition: all 0.2s ease;
         }
-        .device-option-card.active { border-color: var(--primary); background: rgba(0, 136, 255, 0.05); }
+        .device-option-card.active { border-color: var(--primary); background: rgba(255, 255, 255, 0.05); }
+        .device-option-card:active { transform: scale(0.98); }
         .device-option-title { font-size: 16px; font-weight: 700; }
 
         .happ-box {
@@ -158,21 +167,22 @@
         }
         .happ-title { font-size: 20px; font-weight: 900; letter-spacing: 1px; margin-bottom: 20px; }
         .happ-phone-mock {
-            background: #000; border-radius: 30px; width: 140px; height: 160px; margin: 0 auto;
-            border: 4px solid #333; display: flex; align-items: center; justify-content: center; position: relative;
+            background: #0B0B0D; border-radius: 30px; width: 140px; height: 160px; margin: 0 auto;
+            border: 4px solid #3A3F4A; display: flex; align-items: center; justify-content: center; position: relative;
         }
-        .happ-logo-badge { background: #222; padding: 12px 18px; border-radius: 12px; font-weight: 900; font-size: 22px; color: #fff; border: 1px solid #444; }
+        .happ-logo-badge { background: #2A2E38; padding: 12px 18px; border-radius: 12px; font-weight: 900; font-size: 22px; color: #fff; border: 1px solid #4A5160; }
         .happ-support-label {
             position: absolute; bottom: 10px; left: 50%; transform: translateX(-50%);
-            background: rgba(0,0,0,0.8); border: 1px solid rgba(255,255,255,0.2); padding: 4px 12px;
+            background: rgba(0,0,0,0.85); border: 1px solid rgba(255,255,255,0.2); padding: 4px 12px;
             border-radius: 100px; font-size: 11px; font-weight: 600; white-space: nowrap;
         }
 
         .key-box {
-            background: rgba(0,0,0,0.3); border: 1px solid rgba(255,255,255,0.1); border-radius: var(--radius-lg);
+            background: rgba(0,0,0,0.5); border: 1px solid rgba(255,255,255,0.12); border-radius: var(--radius-lg);
             padding: 14px 16px; display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 8px;
-            cursor: pointer;
+            cursor: pointer; transition: background-color 0.2s ease;
         }
+        .key-box:active { background: rgba(255,255,255,0.08); }
         .key-text { font-size: 13px; color: var(--primary); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 
         .device-done-card {
@@ -185,17 +195,17 @@
         .device-list-title { font-size: 13px; color: var(--text-muted); margin-bottom: 12px; padding-left: 4px; text-transform: uppercase; font-weight: 700; letter-spacing: 0.5px;}
         .device-list-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
         .device-list-item { 
-            background: var(--bg-card); border-radius: var(--radius-lg); padding: 16px; 
-            display: flex; align-items: center; justify-content: space-between; cursor: pointer; transition: 0.1s;
+            background: var(--bg-card); border: 1px solid rgba(255,255,255,0.08); border-radius: var(--radius-lg); padding: 16px; 
+            display: flex; align-items: center; justify-content: space-between; cursor: pointer; transition: transform 0.15s ease, background-color 0.2s ease;
         }
-        .device-list-item:active { transform: scale(0.98); }
+        .device-list-item:active { transform: scale(0.97); background: rgba(255,255,255,0.04); }
         .device-list-item-left { display: flex; align-items: center; gap: 12px; }
         .device-list-item-title { font-size: 16px; font-weight: 700; margin-bottom: 2px;}
         .device-list-item-subtitle { font-size: 12px; color: var(--text-muted); }
 
         .setup-step { text-align: left; margin-bottom: 24px; }
         .setup-step-header { display: flex; align-items: center; gap: 12px; margin-bottom: 8px; }
-        .setup-step-num { width: 24px; height: 24px; border-radius: 50%; background: rgba(255,255,255,0.1); display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 800; flex-shrink: 0; }
+        .setup-step-num { width: 24px; height: 24px; border-radius: 50%; background: rgba(255,255,255,0.12); display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 800; flex-shrink: 0; }
         .setup-step-title { font-size: 16px; font-weight: 800; }
         .setup-step-desc { font-size: 13px; color: var(--text-muted); margin-bottom: 16px; line-height: 1.4; }
 
@@ -203,30 +213,54 @@
         .payment-header h2 { font-size: 26px; font-weight: 800; margin-bottom: 8px; line-height: 1.2; }
         .text-primary { color: var(--primary); }
         .payment-header p { font-size: 14px; color: var(--text-muted); margin-bottom: 24px; line-height: 1.4; }
-        .tariff-cards { display: flex; gap: 12px; margin-bottom: 24px; overflow-x: auto; padding-bottom: 4px; scrollbar-width: none; }
+        
+        .tariff-cards { 
+            display: flex; 
+            gap: 12px; 
+            margin-bottom: 24px; 
+            overflow-x: auto; 
+            -webkit-overflow-scrolling: touch;
+            scroll-behavior: smooth;
+            padding: 4px 2px 12px 2px; 
+            scrollbar-width: none; 
+        }
         .tariff-cards::-webkit-scrollbar { display: none; }
-        .tariff-card { flex: 0 0 170px; background: var(--bg-card); border: 2px solid transparent; border-radius: var(--radius-xl); padding: 16px; cursor: pointer; transition: 0.2s; }
-        .tariff-card.active { border-color: var(--primary); background: rgba(0, 136, 255, 0.05); }
+        
+        .tariff-card { 
+            flex: 0 0 170px; 
+            background: var(--bg-card); 
+            border: 2px solid rgba(255,255,255,0.08); 
+            border-radius: var(--radius-xl); 
+            padding: 16px; 
+            cursor: pointer; 
+            transition: transform 0.2s ease, border-color 0.2s ease, background-color 0.2s ease; 
+        }
+        .tariff-card:active { transform: scale(0.97); }
+        .tariff-card.active { border-color: var(--primary); background: rgba(255, 255, 255, 0.06); }
+        
         .tariff-top { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; }
         .tariff-months { font-size: 14px; font-weight: 700; }
-        .tariff-badge { background: var(--primary); color: #fff; font-size: 11px; font-weight: 800; padding: 4px 8px; border-radius: 100px; }
+        .tariff-badge { background: var(--primary); color: var(--text-dark); font-size: 11px; font-weight: 800; padding: 4px 8px; border-radius: 100px; }
         .tariff-price { font-size: 24px; font-weight: 800; margin-bottom: 8px; }
         .tariff-bottom { display: flex; justify-content: space-between; font-size: 12px; color: var(--text-muted); }
+        
         .devices-header { display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; margin-bottom: 16px;}
         .devices-title { font-size: 16px; font-weight: 800; margin-bottom: 8px; }
         .devices-subtitle { font-size: 13px; color: var(--text-muted); line-height: 1.4; }
         .devices-icons { display: flex; gap: 6px; color: var(--text-muted); opacity: 0.5; }
         .devices-counter-wrapper { display: flex; justify-content: flex-end; }
-        .devices-counter { display: flex; align-items: center; background: rgba(255,255,255,0.05); border-radius: 100px; padding: 4px; }
-        .counter-btn { width: 36px; height: 36px; border-radius: 50%; background: transparent; border: 1px solid rgba(255,255,255,0.1); color: var(--text-main); display: flex; align-items: center; justify-content: center; cursor: pointer; transition: 0.2s;}
-        .counter-btn:active { background: rgba(255,255,255,0.1); }
+        .devices-counter { display: flex; align-items: center; background: rgba(255,255,255,0.06); border-radius: 100px; padding: 4px; }
+        .counter-btn { width: 36px; height: 36px; border-radius: 50%; background: transparent; border: 1px solid rgba(255,255,255,0.12); color: var(--text-main); display: flex; align-items: center; justify-content: center; cursor: pointer; transition: transform 0.1s ease, background 0.2s ease;}
+        .counter-btn:active { transform: scale(0.9); background: rgba(255,255,255,0.12); }
         .counter-val { width: 40px; text-align: center; font-size: 16px; font-weight: 800; }
+        
         .payment-summary {
             position: fixed; bottom: 0; left: 0; right: 0; background: var(--bg-card); 
+            border-top: 1px solid rgba(255,255,255,0.1);
             padding: 20px 16px calc(20px + var(--safe-bottom)); 
             border-top-left-radius: var(--radius-xl); border-top-right-radius: var(--radius-xl); 
-            box-shadow: 0 -10px 40px rgba(0,0,0,0.5); z-index: 200; 
-            transform: translateY(120%); transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1); 
+            box-shadow: 0 -10px 40px rgba(0,0,0,0.6); z-index: 200; 
+            transform: translateY(120%); transition: transform 0.35s cubic-bezier(0.16, 1, 0.3, 1); 
         }
         .payment-summary.show { transform: translateY(0); }
         .summary-row { display: flex; justify-content: space-between; margin-bottom: 12px; font-size: 14px; color: var(--text-muted); }
@@ -234,59 +268,82 @@
         .payment-btn { justify-content: space-between; padding: 16px 20px; margin-top: 16px;}
         .payment-btn-price { display: flex; align-items: center; gap: 8px; font-weight: 800;}
         .price-old { text-decoration: line-through; opacity: 0.6; font-size: 12px; font-weight: 500; }
-        .price-badge { background: rgba(0,0,0,0.2); padding: 4px 8px; border-radius: 100px; font-size: 12px; }
+        .price-badge { background: rgba(255,255,255,0.12); padding: 4px 8px; border-radius: 100px; font-size: 12px; }
 
         /* --- OTHERS --- */
         .ref-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 24px; }
         .ref-col-left { display: flex; flex-direction: column; gap: 12px; }
-        .ref-stat-card { background: var(--bg-card); border-radius: var(--radius-lg); padding: 16px; }
+        .ref-stat-card { background: var(--bg-card); border: 1px solid rgba(255,255,255,0.08); border-radius: var(--radius-lg); padding: 16px; }
         .ref-stat-label { font-size: 12px; color: var(--text-muted); margin-bottom: 6px; }
         .ref-stat-val { font-size: 20px; font-weight: 800; }
-        .ref-progress-card { background: var(--bg-card); border-radius: var(--radius-lg); padding: 20px 16px; display: flex; flex-direction: column; align-items: center; justify-content: space-between; }
-        .progress-circle { width: 80px; height: 80px; border-radius: 50%; background: conic-gradient(var(--primary) 0%, rgba(255,255,255,0.05) 0%); display: flex; align-items: center; justify-content: center; margin-bottom: 12px; position: relative; }
+        .ref-progress-card { background: var(--bg-card); border: 1px solid rgba(255,255,255,0.08); border-radius: var(--radius-lg); padding: 20px 16px; display: flex; flex-direction: column; align-items: center; justify-content: space-between; }
+        .progress-circle { width: 80px; height: 80px; border-radius: 50%; background: conic-gradient(var(--primary) 0%, rgba(255,255,255,0.12) 0%); display: flex; align-items: center; justify-content: center; margin-bottom: 12px; position: relative; }
         .progress-circle::before { content: ''; position: absolute; width: 70px; height: 70px; background: var(--bg-card); border-radius: 50%; }
         .progress-dot { position: absolute; top: 0; left: 50%; transform: translateX(-50%); width: 6px; height: 6px; background: var(--primary); border-radius: 50%; box-shadow: 0 0 10px var(--primary); }
         .progress-text { font-size: 11px; color: var(--text-muted); margin-bottom: 4px; text-align: center;}
         .progress-val { font-size: 18px; font-weight: 800; margin-bottom: 16px; text-align: center;}
-        .btn-withdraw { background: var(--primary); color: var(--text-main); border: none; padding: 10px; width: 100%; border-radius: var(--radius-sm); font-weight: 700; font-size: 13px; cursor: pointer; }
+        .btn-withdraw { background: var(--primary); color: var(--text-dark); border: none; padding: 10px; width: 100%; border-radius: var(--radius-sm); font-weight: 700; font-size: 13px; cursor: pointer; transition: transform 0.1s ease; }
+        .btn-withdraw:active { transform: scale(0.95); }
         .detailed-stats-link { text-align: center; color: var(--primary); font-size: 14px; font-weight: 700; display: flex; align-items: center; justify-content: center; gap: 6px; margin-bottom: 24px; cursor: pointer; }
         .link-section-title { font-size: 18px; font-weight: 800; margin-bottom: 12px; }
-        .link-input-wrap { display: flex; align-items: center; background: var(--bg-card); border-radius: var(--radius-md); padding: 6px 6px 6px 16px; }
+        .link-input-wrap { display: flex; align-items: center; background: var(--bg-card); border: 1px solid rgba(255,255,255,0.08); border-radius: var(--radius-md); padding: 6px 6px 6px 16px; }
         .link-input { flex: 1; background: transparent; border: none; color: var(--text-main); font-size: 14px; outline: none; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-        .link-copy-btn { background: var(--primary-transparent); border: none; width: 40px; height: 40px; border-radius: var(--radius-sm); display: flex; align-items: center; justify-content: center; color: var(--primary); cursor: pointer; }
+        .link-copy-btn { background: var(--primary-transparent); border: none; width: 40px; height: 40px; border-radius: var(--radius-sm); display: flex; align-items: center; justify-content: center; color: var(--primary); cursor: pointer; transition: transform 0.1s ease; }
+        .link-copy-btn:active { transform: scale(0.9); }
 
         .faq-list { display: flex; flex-direction: column; gap: 12px; margin-bottom: 24px; }
-        .faq-item { background: var(--bg-card); border-radius: var(--radius-lg); padding: 16px; display: flex; align-items: center; gap: 16px; cursor: pointer; }
-        .faq-num { width: 28px; height: 28px; border-radius: 50%; background: rgba(0,136,255,0.15); color: var(--primary); display: flex; align-items: center; justify-content: center; font-weight: 800; font-size: 14px; flex-shrink: 0; }
+        .faq-item { background: var(--bg-card); border: 1px solid rgba(255,255,255,0.08); border-radius: var(--radius-lg); padding: 16px; display: flex; align-items: center; gap: 16px; cursor: pointer; transition: transform 0.15s ease, background-color 0.2s ease; }
+        .faq-item:active { transform: scale(0.98); background: rgba(255,255,255,0.04); }
+        .faq-num { width: 28px; height: 28px; border-radius: 50%; background: rgba(255,255,255,0.12); color: var(--primary); display: flex; align-items: center; justify-content: center; font-weight: 800; font-size: 14px; flex-shrink: 0; }
         .faq-title { flex: 1; font-size: 15px; font-weight: 700; }
         .faq-arrow { color: var(--text-muted); }
-        .help-banner { background: linear-gradient(135deg, rgba(17,26,38,1) 0%, rgba(0,60,115,1) 100%); border-radius: var(--radius-xl); padding: 24px; position: relative; overflow: hidden; }
+        
+        .help-banner { background: linear-gradient(135deg, rgba(26,29,36,1) 0%, rgba(42,46,56,1) 100%); border: 1px solid rgba(255,255,255,0.08); border-radius: var(--radius-xl); padding: 24px; position: relative; overflow: hidden; }
         .help-banner h3 { font-size: 18px; font-weight: 800; margin-bottom: 8px; }
         .help-banner p { font-size: 13px; color: var(--text-muted); max-width: 65%; line-height: 1.4; margin-bottom: 16px; }
         .help-link { color: var(--primary); font-weight: 700; font-size: 14px; display: inline-flex; align-items: center; gap: 6px; cursor: pointer; }
-        .help-icon { position: absolute; bottom: -10px; right: -10px; width: 110px; height: 110px; opacity: 0.9; pointer-events: none; }
+        .help-icon { position: absolute; bottom: -10px; right: -10px; width: 110px; height: 110px; opacity: 0.6; pointer-events: none; }
 
-        .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.75); backdrop-filter: blur(12px); z-index: 1000; display: none; align-items: center; justify-content: center; opacity: 0; transition: opacity 0.3s ease; padding: 20px; }
+        .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.8); backdrop-filter: blur(12px); z-index: 1000; display: none; align-items: center; justify-content: center; opacity: 0; transition: opacity 0.25s ease; padding: 20px; }
         .modal-overlay.show { display: flex; opacity: 1; }
-        .modal-content { background: var(--bg-card); border: 1px solid rgba(255,255,255,0.05); border-radius: var(--radius-xl); padding: 24px; width: 100%; max-width: 340px; position: relative; box-shadow: 0 20px 40px rgba(0,0,0,0.5); }
+        .modal-content { background: var(--bg-card); border: 1px solid rgba(255,255,255,0.1); border-radius: var(--radius-xl); padding: 24px; width: 100%; max-width: 340px; position: relative; box-shadow: 0 20px 40px rgba(0,0,0,0.6); animation: scaleUp 0.25s cubic-bezier(0.16, 1, 0.3, 1); }
+        @keyframes scaleUp {
+            from { opacity: 0; transform: scale(0.95); }
+            to { opacity: 1; transform: scale(1); }
+        }
         .modal-close { position: absolute; top: 16px; right: 16px; background: transparent; border: none; color: var(--text-muted); cursor: pointer; padding: 4px; }
         .modal-title { font-size: 20px; font-weight: 800; margin-bottom: 8px; padding-right: 24px; }
         .modal-text { font-size: 14px; color: var(--text-muted); line-height: 1.4; }
-        .modal-input { width: 100%; padding: 16px; background: transparent; border: 1px solid var(--primary); border-radius: var(--radius-sm); color: var(--text-main); font-size: 15px; outline: none; margin-top: 10px; margin-bottom: 20px; }
+        .modal-input { width: 100%; padding: 16px; background: rgba(0,0,0,0.4); border: 1px solid rgba(255,255,255,0.2); border-radius: var(--radius-sm); color: var(--text-main); font-size: 15px; outline: none; margin-top: 10px; margin-bottom: 20px; }
+
+        /* Стили для выбора способа оплаты */
+        .payment-option-card {
+            background: rgba(255,255,255,0.04);
+            border: 1px solid rgba(255,255,255,0.1);
+            border-radius: var(--radius-md);
+            padding: 14px;
+            margin-bottom: 10px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+        .payment-option-card:active { transform: scale(0.98); }
 
         /* --- SETTINGS TAB & SWITCHERS --- */
-        .settings-promo { background: linear-gradient(135deg, var(--bg-card) 0%, rgba(0, 136, 255, 0.2) 100%); border-radius: var(--radius-xl); padding: 20px; margin-bottom: 24px; position: relative; overflow: hidden; }
+        .settings-promo { background: linear-gradient(135deg, var(--bg-card) 0%, rgba(255, 255, 255, 0.08) 100%); border: 1px solid rgba(255,255,255,0.08); border-radius: var(--radius-xl); padding: 20px; margin-bottom: 24px; position: relative; overflow: hidden; cursor: pointer; }
         .settings-promo h3 { font-size: 18px; font-weight: 800; margin-bottom: 6px; }
         .settings-promo p { font-size: 13px; color: var(--text-muted); max-width: 60%; margin-bottom: 16px; line-height: 1.4;}
-        .settings-promo-icon { position: absolute; right: 10px; top: 50%; transform: translateY(-50%); font-size: 60px; color: var(--primary); opacity: 0.8; }
+        .settings-promo-icon { position: absolute; right: 10px; top: 50%; transform: translateY(-50%); font-size: 60px; color: var(--primary); opacity: 0.7; }
         .settings-section { margin-bottom: 24px; }
         .settings-section-title { font-size: 16px; font-weight: 800; margin-bottom: 12px; padding-left: 4px; }
-        .settings-block { background: var(--bg-card); border-radius: var(--radius-xl); overflow: hidden; }
-        .settings-row { display: flex; align-items: center; justify-content: space-between; padding: 16px 20px; border-bottom: 1px solid rgba(255,255,255,0.05); cursor: pointer; transition: background 0.1s; }
-        .settings-row:active { background: rgba(255,255,255,0.02); }
+        .settings-block { background: var(--bg-card); border: 1px solid rgba(255,255,255,0.08); border-radius: var(--radius-xl); overflow: hidden; }
+        .settings-row { display: flex; align-items: center; justify-content: space-between; padding: 16px 20px; border-bottom: 1px solid rgba(255,255,255,0.06); cursor: pointer; transition: background 0.15s ease; }
+        .settings-row:active { background: rgba(255,255,255,0.06); }
         .settings-row:last-child { border-bottom: none; }
         .settings-row-left { display: flex; align-items: center; gap: 12px; }
-        .settings-icon { width: 36px; height: 36px; border-radius: 50%; background: rgba(255,255,255,0.05); display: flex; align-items: center; justify-content: center; color: var(--primary); }
+        .settings-icon { width: 36px; height: 36px; border-radius: 50%; background: rgba(255,255,255,0.08); display: flex; align-items: center; justify-content: center; color: var(--primary); }
         .settings-row-title { font-size: 15px; font-weight: 700; }
         .settings-row-subtitle { font-size: 12px; color: var(--text-muted); margin-top: 2px; }
         .settings-action { color: var(--text-muted); }
@@ -295,12 +352,12 @@
         /* Переключатели iOS Style */
         .switch { position: relative; display: inline-block; width: 46px; height: 26px; }
         .switch input { opacity: 0; width: 0; height: 0; }
-        .slider { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: rgba(255,255,255,0.1); transition: .3s; border-radius: 34px; }
-        .slider:before { position: absolute; content: ""; height: 22px; width: 22px; left: 2px; bottom: 2px; background-color: white; transition: .3s; border-radius: 50%; }
+        .slider { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: rgba(255,255,255,0.2); transition: .3s; border-radius: 34px; }
+        .slider:before { position: absolute; content: ""; height: 22px; width: 22px; left: 2px; bottom: 2px; background-color: white; transition: .3s cubic-bezier(0.16, 1, 0.3, 1); border-radius: 50%; }
         input:checked + .slider { background-color: var(--primary); }
-        input:checked + .slider:before { transform: translateX(20px); }
+        input:checked + .slider:before { transform: translateX(20px); background-color: var(--text-dark); }
 
-        .doc-card { background: var(--bg-card); border-radius: var(--radius-xl); padding: 24px; margin-bottom: 16px; }
+        .doc-card { background: var(--bg-card); border: 1px solid rgba(255,255,255,0.08); border-radius: var(--radius-xl); padding: 24px; margin-bottom: 16px; }
         .doc-section { margin-bottom: 24px; }
         .doc-title { font-size: 20px; font-weight: 800; margin-bottom: 4px; }
         .doc-date { font-size: 12px; color: var(--text-muted); margin-bottom: 16px; }
@@ -309,9 +366,10 @@
         .doc-ul { font-size: 14px; color: var(--text-muted); line-height: 1.5; padding-left: 20px; margin-bottom: 12px; }
         .doc-link { color: var(--primary); text-decoration: none; cursor: pointer; }
 
-        .bottom-nav { position: fixed; bottom: calc(16px + var(--safe-bottom)); left: 16px; right: 16px; height: var(--nav-height); background: var(--bg-card); border-radius: 35px; display: flex; align-items: center; justify-content: space-around; padding: 0 8px; box-shadow: 0 10px 30px rgba(0,0,0,0.5); z-index: 100; }
-        .nav-item { width: 60px; height: 54px; border-radius: 27px; display: flex; align-items: center; justify-content: center; color: var(--text-muted); cursor: pointer; transition: all 0.3s ease; }
-        .nav-item.active { background: var(--primary); color: var(--text-main); }
+        .bottom-nav { position: fixed; bottom: calc(16px + var(--safe-bottom)); left: 16px; right: 16px; height: var(--nav-height); background: var(--bg-card); border: 1px solid rgba(255,255,255,0.1); border-radius: 35px; display: flex; align-items: center; justify-content: space-around; padding: 0 8px; box-shadow: 0 10px 30px rgba(0,0,0,0.6); z-index: 100; }
+        .nav-item { width: 60px; height: 54px; border-radius: 27px; display: flex; align-items: center; justify-content: center; color: var(--text-muted); cursor: pointer; transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1); }
+        .nav-item.active { background: var(--primary); color: var(--text-dark); transform: translateY(-2px); }
+        .nav-item:active { transform: scale(0.92); }
         .nav-item i { width: 24px; height: 24px; }
         .check-circle { width: 24px; height: 24px; background: var(--success); border-radius: 50%; display: flex; align-items: center; justify-content: center; color: #fff; }
     </style>
@@ -332,9 +390,45 @@
             <div id="emailModalBody">
                 <h3 class="modal-title" style="margin-bottom: 12px; font-size: 22px;">Введите электронную почту</h3>
                 <p class="modal-text" id="emailModalDesc">На неё придёт код для подтверждения</p>
-                <input type="email" class="modal-input" placeholder="name@example.com" id="emailInput">
+                <input type="email" class="modal-input" placeholder="name@gmail.com" id="emailInput">
                 <button type="button" class="btn btn-primary" onclick="handleEmailModalAction(event)" id="emailActionBtn">Отправить код</button>
             </div>
+        </div>
+    </div>
+
+    <!-- МОДАЛЬНОЕ ОКНО ВЫБОРА СПОСОБА ОПЛАТЫ -->
+    <div id="paymentMethodModal" class="modal-overlay" onclick="closeModal(event)">
+        <div class="modal-content" onclick="event.stopPropagation()">
+            <button class="modal-close" onclick="closeModal()"><i data-lucide="x" style="width: 20px;"></i></button>
+            <h3 class="modal-title" style="margin-bottom: 16px; font-size: 20px;">Способ оплаты</h3>
+            
+            <div class="payment-option-card" onclick="selectPaymentMethod('card')" id="payOptCard" style="border-color: var(--primary);">
+                <i data-lucide="credit-card" style="width: 20px; color: var(--primary);"></i>
+                <span style="font-weight: 700; font-size: 15px;">Картой</span>
+            </div>
+            
+            <div class="payment-option-card" onclick="selectPaymentMethod('sbp')" id="payOptSbp">
+                <i data-lucide="smartphone" style="width: 20px; color: var(--primary);"></i>
+                <span style="font-weight: 700; font-size: 15px;">СБП</span>
+            </div>
+            
+            <div class="payment-option-card" onclick="selectPaymentMethod('crypto')" id="payOptCrypto">
+                <i data-lucide="bitcoin" style="width: 20px; color: var(--primary);"></i>
+                <span style="font-weight: 700; font-size: 15px;">Криптовалютой (CryptoBot)</span>
+            </div>
+
+            <div style="display: flex; align-items: center; gap: 10px; margin: 20px 0; cursor: pointer;" onclick="toggleAutoRenewal()">
+                <div id="autoRenewCheck" style="width: 20px; height: 20px; border-radius: 6px; background: var(--primary); display: flex; align-items: center; justify-content: center; color: var(--text-dark);">
+                    <i data-lucide="check" style="width: 14px;"></i>
+                </div>
+                <span style="font-size: 14px; font-weight: 600;">Автопродление</span>
+            </div>
+
+            <button type="button" class="btn btn-primary" onclick="executeFinalPayment()" id="finalPayBtn">Оплатить картой</button>
+            
+            <p style="font-size: 11px; color: var(--text-muted); text-align: center; margin-top: 14px; line-height: 1.4;">
+                Оплачивая, вы принимаете <a href="#" onclick="switchTab('documents'); closeModal();" style="color: var(--primary);">Политику конфиденциальности и Оферту</a>
+            </p>
         </div>
     </div>
 
@@ -612,7 +706,7 @@
             <h2 class="setup-title" style="margin-bottom: 30px;">Настроить на Linux</h2>
             <div class="setup-step">
                 <div class="setup-step-header"><div class="setup-step-num">1</div><div class="setup-step-title">Скачайте приложение HAPP</div></div>
-                <div class="setup-step-desc">Установите приложение на устройство, чтобы подключить VPN</div>
+                <div class="setup-step-desc">Установите наше приложение на устройство, чтобы подключить VPN</div>
                 <button class="btn btn-white" onclick="window.open('https://github.com/Happ-proxy/happ-desktop/releases/latest/download/Happ.linux.arm64.deb', '_blank')">
                     <i data-lucide="download" style="width: 18px; height: 18px;"></i> Скачать
                 </button>
@@ -679,12 +773,12 @@
             <button class="back-btn" onclick="switchTab('setup-key')"><i data-lucide="chevron-left" style="width: 20px;"></i></button>
         </div>
         <div class="setup-screen">
-            <div class="setup-icon-box" style="background: rgba(0,200,83,0.15); border-color: rgba(0,200,83,0.3); color: var(--success);"><i data-lucide="check" style="width: 32px; height: 32px;"></i></div>
+            <div class="setup-icon-box" style="background: rgba(16,185,129,0.15); border-color: rgba(16,185,129,0.3); color: var(--success);"><i data-lucide="check" style="width: 32px; height: 32px;"></i></div>
             <h2 class="setup-title">Готово!</h2>
             <p class="setup-desc">Поздравляем, VPN подключен — пользуйтесь интернетом без ограничений</p>
 
             <div class="device-done-card">
-                <div style="width: 48px; height: 48px; border-radius: 50%; background: rgba(0,136,255,0.15); display: flex; align-items: center; justify-content: center; color: var(--primary);">
+                <div style="width: 48px; height: 48px; border-radius: 50%; background: rgba(255,255,255,0.08); display: flex; align-items: center; justify-content: center; color: var(--primary);">
                     <i data-lucide="smartphone" style="width: 24px; height: 24px;"></i>
                 </div>
                 <div>
@@ -791,7 +885,6 @@
         <div class="settings-section">
             <div class="settings-section-title">Аккаунт</div>
             <div class="settings-block">
-                <!-- НОВЫЙ ФУНКЦИОНАЛ: Кнопка Уведомления -->
                 <div class="settings-row" onclick="switchTab('notifications')">
                     <div class="settings-row-left">
                         <div class="settings-icon"><i data-lucide="bell" style="width: 18px;"></i></div>
@@ -799,7 +892,6 @@
                     </div>
                     <div class="settings-action"><i data-lucide="arrow-right" style="width: 18px;"></i></div>
                 </div>
-                <!-- НОВЫЙ ФУНКЦИОНАЛ: Кнопка Устройства -->
                 <div class="settings-row" onclick="switchTab('devices')">
                     <div class="settings-row-left">
                         <div class="settings-icon"><i data-lucide="monitor" style="width: 18px;"></i></div>
@@ -815,13 +907,13 @@
                 <div class="settings-row" onclick="openEmailModal()">
                     <div class="settings-row-left">
                         <div class="settings-icon" style="background:transparent; color: var(--text-main);"><i data-lucide="mail" style="width: 24px;"></i></div>
-                        <div><div class="settings-row-title">Email</div><div class="settings-row-subtitle">Не привязан</div></div>
+                        <div><div class="settings-row-title">Email</div><div class="settings-row-subtitle" id="emailSubtitle">Не привязан</div></div>
                     </div>
-                    <div class="settings-action primary">Привязать</div>
+                    <div class="settings-action primary" id="emailAction">Привязать</div>
                 </div>
                 <div class="settings-row">
                     <div class="settings-row-left">
-                        <div class="settings-icon" style="background:transparent; color: var(--primary);"><i data-lucide="send" style="width: 24px; fill: var(--primary);"></i></div>
+                        <div class="settings-icon" style="background:transparent; color: var(--text-main);"><i data-lucide="send" style="width: 24px; fill: var(--text-main);"></i></div>
                         <div><div class="settings-row-title">Telegram</div><div class="settings-row-subtitle">id: 883071272</div></div>
                     </div>
                     <div class="settings-action"><div class="check-circle"><i data-lucide="check" style="width: 14px;"></i></div></div>
@@ -895,7 +987,6 @@
                         <div class="device-list-item-subtitle">Был в сети: сегодня, 10:45</div>
                     </div>
                 </div>
-                <!-- Кнопка удаления устройства -->
                 <button style="background: rgba(255, 77, 77, 0.1); border: none; color: var(--danger); width: 36px; height: 36px; border-radius: 50%; display: flex; align-items: center; justify-content: center; cursor: pointer; transition: 0.2s;" onclick="unlinkDevice('device-pc')">
                     <i data-lucide="trash-2" style="width: 16px; height: 16px;"></i>
                 </button>
@@ -940,54 +1031,6 @@
                 <div class="doc-h3">7. Контактная информация</div>
                 <div class="doc-p">По вопросам обработки и защиты персональных данных: поддержка в Telegram <a class="doc-link" onclick="openSupportChat()">@afroslavyan</a></div>
             </div>
-            <hr style="border: none; border-top: 1px solid rgba(255,255,255,0.1); margin: 30px 0;">
-            <div class="doc-section">
-                <div class="doc-title">Публичная оферта</div>
-                <div class="doc-date">Дата последнего обновления: 24 ноября 2025 г.</div>
-                <div class="doc-h3">1. Общие положения</div>
-                <div class="doc-p">Настоящая Публичная оферта является официальным предложением заключить договор возмездного оказания услуг VPN-доступа с владельцем Telegram-бота AFROVPN. В соответствии со статьёй 437 Гражданского кодекса РФ оплата услуг считается акцептом условий.</div>
-                <div class="doc-h3">2. Предмет договора</div>
-                <div class="doc-p">Исполнитель предоставляет услуги VPN-доступа для защиты интернет-соединения и обеспечения конфиденциальности. Пользователь оплачивает услуги на условиях оферты.</div>
-                <div class="doc-h3">3. Стоимость и порядок оплаты</div>
-                <div class="doc-p">Стоимость услуг (тарифы) отображаются в интерфейсе сервиса. Оплата осуществляется через платёжную систему, интегрированную в Telegram-бот.</div>
-                <div class="doc-h3">4. Условия оказания услуг</div>
-                <div class="doc-p">Услуги предоставляются круглосуточно, за исключением периодов технического обслуживания. Доступ к VPN предоставляется в течение нескольких минут после оплаты.</div>
-                <div class="doc-h3">5. Порядок возврата средств</div>
-                <div class="doc-p">Действует лояльная политика возвратов. Можно запросить возврат неиспользованных средств при неудовлетворённости качеством услуг. Возврат производится в течение 10 рабочих дней после обращения в поддержку по ссылке <a class="doc-link" onclick="openSupportChat()">@afroslavyan</a>.</div>
-                <div class="doc-h3">6. Ответственность сторон</div>
-                <div class="doc-p">Исполнитель не несёт ответственности за сбои связи и работу провайдеров; действия государственных органов; использование сервиса в незаконных целях.</div>
-                <div class="doc-h3">7. Прекращение оказания услуг</div>
-                <div class="doc-p">Пользователь вправе отказаться от услуг в любой момент. Исполнитель может приостановить предоставление услуг при нарушении условий оферты.</div>
-                <div class="doc-h3">8. Заключительные положения</div>
-                <div class="doc-p">Споры решаются переговорами, при необходимости — в судебном порядке по законодательству РФ.</div>
-                <div class="doc-h3">Контактная информация</div>
-                <div class="doc-p">Служба поддержки: <a class="doc-link" onclick="openSupportChat()">@afroslavyan</a></div>
-                <div class="doc-h3">Реквизиты исполнителя</div>
-                <div class="doc-p">Наименование: Safe Journey Lab ApS<br>Регистрационный код (CVR): 40090894<br>Адрес: Flæsketorvet 68, 1711 Copenhagen V, Denmark</div>
-            </div>
-            <hr style="border: none; border-top: 1px solid rgba(255,255,255,0.1); margin: 30px 0;">
-            <div class="doc-section">
-                <div class="doc-title">Пользовательское соглашение</div>
-                <div class="doc-date">Дата последнего обновления: 24 ноября 2025 г.</div>
-                <div class="doc-h3">1. Общие положения</div>
-                <div class="doc-p">Настоящее Пользовательское соглашение регулирует отношения между владельцем Telegram-бота AFROVPN и физическим лицом, использующим функционал сервиса.</div>
-                <div class="doc-h3">2. Предмет соглашения</div>
-                <div class="doc-p">Сервис предоставляет услуги VPN-доступа в сеть Интернет на возмездной основе.</div>
-                <div class="doc-h3">3. Условия регистрации и использования</div>
-                <div class="doc-p">Для использования сервиса необходимо авторизоваться в Telegram-боте. Идентификация осуществляется по Telegram ID.</div>
-                <div class="doc-h3">4. Подписка и порядок оплаты</div>
-                <div class="doc-p">Оплата производится через платёжную систему, интегрированную в бот. Подписка продлевается автоматически, если пользователь не отключил автопродление.</div>
-                <div class="doc-h3">5. Возврат средств</div>
-                <div class="doc-p">Сервис придерживается лояльной политики возвратов. Возврат осуществляется в течение 10 рабочих дней после обращения в поддержку.</div>
-                <div class="doc-h3">6. Ограничения и запреты</div>
-                <div class="doc-p">Пользователю запрещается использовать сервис для рассылки спама; DDoS-атак, фишинга и иных вредоносных действий; распространения вредоносного ПО.</div>
-                <div class="doc-h3">7. Реферальная программа</div>
-                <div class="doc-p">Сервис может предоставлять реферальную программу с вознаграждением за привлечение новых пользователей.</div>
-                <div class="doc-h3">8. Ответственность сторон</div>
-                <div class="doc-p">Сервис предоставляется «как есть». Исполнитель не несёт ответственности за сбои сети Интернет.</div>
-                <div class="doc-h3">9. Поддержка</div>
-                <div class="doc-p">По вопросам и обращениям: поддержка в Telegram <a class="doc-link" onclick="openSupportChat()">@afroslavyan</a></div>
-            </div>
         </div>
     </div>
 
@@ -995,7 +1038,7 @@
     <div id="paymentSummary" class="payment-summary">
         <div class="summary-row"><div class="summary-label"><i data-lucide="calendar" style="width:16px;"></i> <span id="summaryMonths">12 месяцев</span></div><div class="summary-val" id="summaryPerDay">5,00 ₽ / день</div></div>
         <div class="summary-row"><div class="summary-label"><i data-lucide="monitor" style="width:16px;"></i> <span id="summaryDevs">3 устройства</span></div><div class="summary-val" id="summaryDevCost">0,00 ₽ / день</div></div>
-        <button class="btn btn-primary payment-btn" onclick="processPayment()">
+        <button class="btn btn-primary payment-btn" onclick="openPaymentMethodModal()">
             <span>Оплатить</span>
             <div class="payment-btn-price">
                 <span id="summaryTotal">1799 ₽</span>
@@ -1040,13 +1083,14 @@
         if(tg) {
             tg.ready();
             tg.expand();
-            tg.setHeaderColor('#060B14');
-            tg.setBackgroundColor('#060B14');
+            tg.setHeaderColor('#121418');
+            tg.setBackgroundColor('#121418');
         }
 
-        // PAYMENT CALCULATOR
         let currentTariff = 12;
         let devicesCount = 3;
+        let selectedPaymentMethod = 'card';
+        let autoRenewalEnabled = true;
 
         function selectTariff(months) {
             if(tg?.HapticFeedback) tg.HapticFeedback.impactOccurred('light');
@@ -1098,24 +1142,101 @@
             }
         }
 
-        function processPayment() {
-            if(tg?.HapticFeedback) tg.HapticFeedback.impactOccurred('medium');
-            alert(`Оплата ${document.getElementById('summaryTotal').innerText} за тариф на ${currentTariff} мес. (${devicesCount} устр.)`);
+        function openPaymentMethodModal() {
+            if(tg?.HapticFeedback) tg.HapticFeedback.impactOccurred('light');
+            document.getElementById('paymentMethodModal').classList.add('show');
+            lucide.createIcons();
         }
 
-        // --- УМНОЕ ОПРЕДЕЛЕНИЕ УСТРОЙСТВА ---
+        function selectPaymentMethod(method) {
+            if(tg?.HapticFeedback) tg.HapticFeedback.impactOccurred('light');
+            selectedPaymentMethod = method;
+            
+            document.getElementById('payOptCard').style.borderColor = 'rgba(255,255,255,0.1)';
+            document.getElementById('payOptSbp').style.borderColor = 'rgba(255,255,255,0.1)';
+            document.getElementById('payOptCrypto').style.borderColor = 'rgba(255,255,255,0.1)';
+            
+            if(method === 'card') document.getElementById('payOptCard').style.borderColor = 'var(--primary)';
+            if(method === 'sbp') document.getElementById('payOptSbp').style.borderColor = 'var(--primary)';
+            if(method === 'crypto') document.getElementById('payOptCrypto').style.borderColor = 'var(--primary)';
+            
+            const btn = document.getElementById('finalPayBtn');
+            if(method === 'crypto') btn.innerText = 'Оплатить через CryptoBot';
+            else if(method === 'sbp') btn.innerText = 'Оплатить через СБП';
+            else btn.innerText = 'Оплатить картой';
+        }
+
+        function toggleAutoRenewal() {
+            if(tg?.HapticFeedback) tg.HapticFeedback.impactOccurred('light');
+            autoRenewalEnabled = !autoRenewalEnabled;
+            const checkEl = document.getElementById('autoRenewCheck');
+            if(autoRenewalEnabled) {
+                checkEl.style.background = 'var(--primary)';
+                checkEl.innerHTML = '<i data-lucide="check" style="width: 14px;"></i>';
+            } else {
+                checkEl.style.background = 'rgba(255,255,255,0.1)';
+                checkEl.innerHTML = '';
+            }
+            lucide.createIcons();
+        }
+
+        async function executeFinalPayment() {
+            if(tg?.HapticFeedback) tg.HapticFeedback.impactOccurred('medium');
+            const total = document.getElementById('summaryTotal').innerText;
+            
+            if (selectedPaymentMethod === 'crypto') {
+                let userId = "test_user";
+                if (window.Telegram?.WebApp?.initDataUnsafe?.user) {
+                    userId = String(window.Telegram.WebApp.initDataUnsafe.user.id);
+                }
+                
+                const btn = document.getElementById('finalPayBtn');
+                btn.textContent = 'Создание счета...';
+                btn.disabled = true;
+
+                try {
+                    const response = await fetch(`${API_URL}/create-crypto-invoice`, {
+                        method: "POST",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify({ 
+                            tg_id: userId, 
+                            amount: parseFloat(total) / 90, // Пример расчета в USD (около 90р за USDT)
+                            description: `Подписка на ${currentTariff} мес. (${devicesCount} устр.)`
+                        })
+                    });
+                    const result = await response.json();
+                    if (response.ok && result.success) {
+                        document.getElementById('paymentMethodModal').classList.remove('show');
+                        if (window.Telegram?.WebApp?.openLink) {
+                            window.Telegram.WebApp.openLink(result.pay_url);
+                        } else {
+                            window.open(result.pay_url, '_blank');
+                        }
+                    } else {
+                        alert("Ошибка CryptoBot: " + (result.detail || "Не удалось создать счет"));
+                    }
+                } catch (e) {
+                    console.error(e);
+                    alert("Ошибка сети при обращении к серверу.");
+                } finally {
+                    btn.textContent = 'Оплатить через CryptoBot';
+                    btn.disabled = false;
+                }
+            } else {
+                alert(`Оплата ${total} методом: ${selectedPaymentMethod === 'sbp' ? 'СБП' : 'Картой'}. Автопродление: ${autoRenewalEnabled ? 'Вкл' : 'Выкл'}`);
+                document.getElementById('paymentMethodModal').classList.remove('show');
+            }
+        }
+
         function autoDetectDeviceAndSwitch() {
             if(tg?.HapticFeedback) tg.HapticFeedback.impactOccurred('light');
-            
             let platform = 'unknown';
-            
             if (tg && tg.platform && tg.platform !== 'unknown') {
                 const p = tg.platform.toLowerCase();
                 if (p === 'android' || p === 'android_x') platform = 'android';
                 else if (p === 'ios') platform = 'ios';
                 else if (p === 'macos') platform = 'macos';
             }
-            
             if (platform === 'unknown') {
                 const ua = navigator.userAgent.toLowerCase();
                 if (/iphone|ipad|ipod/.test(ua)) platform = 'ios';
@@ -1124,7 +1245,6 @@
                 else if (/windows|win32/.test(ua)) platform = 'windows';
                 else if (/linux/.test(ua)) platform = 'linux';
             }
-            
             if (platform === 'ios') switchTab('setup-ios');
             else if (platform === 'android') switchTab('setup-android');
             else if (platform === 'macos') switchTab('setup-macos');
@@ -1137,12 +1257,10 @@
             if(tg?.HapticFeedback) tg.HapticFeedback.impactOccurred('light');
             document.getElementById('devThis').classList.remove('active');
             document.getElementById('devOther').classList.remove('active');
-            
             document.getElementById('iconThis').style.color = 'var(--text-muted)';
             document.getElementById('iconOther').style.color = 'var(--text-muted)';
 
             const nextBtn = document.getElementById('setupDeviceNextBtn');
-
             if(type === 'this') {
                 document.getElementById('devThis').classList.add('active');
                 document.getElementById('iconThis').style.color = 'var(--primary)';
@@ -1161,10 +1279,22 @@
             const key = document.getElementById('userKeyText').innerText;
             navigator.clipboard.writeText(key).then(() => alert('Ключ скопирован в буфер обмена!'));
         }
+
         function copyKeyTextOther() {
             if(tg?.HapticFeedback) tg.HapticFeedback.impactOccurred('medium');
             const key = document.getElementById('userKeyTextOther').innerText;
             navigator.clipboard.writeText(key).then(() => alert('Ключ скопирован в буфер обмена!'));
+        }
+
+        function copyLink() {
+            if(tg?.HapticFeedback) tg.HapticFeedback.impactOccurred('medium');
+            const refInput = document.getElementById('refLink');
+            navigator.clipboard.writeText(refInput.value).then(() => alert('Реферальная ссылка скопирована в буфер обмена!'));
+        }
+
+        function openSupportChat() {
+            if(tg?.HapticFeedback) tg.HapticFeedback.impactOccurred('light');
+            window.open('https://t.me/afroslavyan', '_blank');
         }
 
         function addToApp() {
@@ -1184,7 +1314,6 @@
             }
         }
 
-        // Навигация
         function switchTab(tabId) {
             if(tg?.HapticFeedback) tg.HapticFeedback.impactOccurred('light');
             document.querySelectorAll('.view-container').forEach(el => el.classList.remove('active'));
@@ -1233,7 +1362,7 @@
             document.getElementById('emailModalBody').innerHTML = `
                 <h3 class="modal-title" style="margin-bottom: 12px; font-size: 22px;">Введите электронную почту</h3>
                 <p class="modal-text" id="emailModalDesc">На неё придёт код для подтверждения</p>
-                <input type="email" class="modal-input" placeholder="name@example.com" id="emailInput">
+                <input type="email" class="modal-input" placeholder="name@gmail.com" id="emailInput">
                 <button type="button" class="btn btn-primary" onclick="handleEmailModalAction(event)" id="emailActionBtn">Отправить код</button>
             `;
             document.getElementById('emailModal').classList.add('show');
@@ -1245,7 +1374,7 @@
             }
         }
 
-        const API_URL = "http://127.0.0.1:8000"; 
+        const API_URL = "https://vpn-mini-app.onrender.com"; 
         let globalEmail = "";
         let currentModalStep = 1;
 
@@ -1327,8 +1456,8 @@
                         alert('Почта успешно привязана!');
                         document.getElementById('emailModal').classList.remove('show');
                         currentModalStep = 1; 
-                        document.querySelector('.settings-row-subtitle').textContent = globalEmail;
-                        document.querySelector('.settings-action.primary').innerHTML = '<div class="check-circle"><i data-lucide="check" style="width: 20px;"></i></div>';
+                        document.getElementById('emailSubtitle').textContent = globalEmail;
+                        document.getElementById('emailAction').innerHTML = '<div class="check-circle"><i data-lucide="check" style="width: 20px;"></i></div>';
                         lucide.createIcons();
                     } else {
                         alert(result.detail || "Неверный код");
