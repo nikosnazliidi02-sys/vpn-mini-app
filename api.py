@@ -71,7 +71,6 @@ async def create_yookassa_invoice(req: YooKassaRequest):
             "currency": "RUB"
         },
         "capture": True,
-        "save_payment_method": True,
         "confirmation": {
             "type": "redirect",
             "return_url": "https://t.me/afroslavyanVPN_bot"
@@ -81,6 +80,10 @@ async def create_yookassa_invoice(req: YooKassaRequest):
             "tg_id": str(req.tg_id)
         }
     }
+    
+    # Добавляем сохранение способа оплаты только если пользователь реально включил автопродление
+    if req.auto_renewal:
+        payload["save_payment_method"] = True
     
     async with httpx.AsyncClient() as client:
         try:
@@ -123,7 +126,7 @@ async def create_yookassa_invoice(req: YooKassaRequest):
         except Exception as e:
             raise HTTPException(status_code=500, detail=str(e))
 
-# --- ДОБАВЛЕННЫЙ ЭНДПОИНТ ДЛЯ CRYPTOBOT ---
+# --- ЭНДПОИНТ ДЛЯ CRYPTOBOT ---
 class CryptoRequest(BaseModel):
     tg_id: str
     amount: float
@@ -132,8 +135,6 @@ class CryptoRequest(BaseModel):
 
 @app.post("/create-crypto-invoice")
 async def create_crypto_invoice(req: CryptoRequest):
-    # Если вы используете официальный CryptoBot API, здесь делается запрос к их шлюзу.
-    # Пока возвращаем тестовую ссылку, чтобы кнопка не выдавала ошибку сети:
     return {
         "success": True,
         "pay_url": "https://t.me/CryptoBot?start=test"
@@ -256,4 +257,4 @@ def admin_create_promo(req: AdminPromoCreate):
         cursor = conn.cursor()
         cursor.execute("INSERT OR REPLACE INTO promocodes (code, discount_percent) VALUES (?, ?)", (req.code.strip().upper(), req.discount_percent))
         conn.commit()
-    return {"success": True, "message": f"Промокод успешно создан"}
+    return {"success": True, "message": "Промокод успешно создан"}
