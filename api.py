@@ -5,6 +5,8 @@ from pydantic import BaseModel
 from datetime import datetime, timedelta
 import httpx
 
+app = FastAPI()
+
 # --- НАСТРОЙКИ ЮKASSA ---
 YOOKASSA_SHOP_ID = "1444358"
 YOOKASSA_SECRET_KEY = "live_7YgYIW8xKJsRDfqlSt2P-fqubRhw4Fs8eUr-R5wJYq4"
@@ -75,7 +77,7 @@ async def create_yookassa_invoice(req: YooKassaRequest):
 
 @app.get("/admin/stats")
 def get_admin_stats():
-    """Дашборд проекта: пользователи, активные подписки и общая выручка[cite: 6]"""
+    """Дашборд проекта: пользователи, активные подписки и общая выручка[cite: 6, 10]"""
     with sqlite3.connect("vpn_users.db") as conn:
         cursor = conn.cursor()
         cursor.execute("SELECT COUNT(DISTINCT tg_id) FROM subscriptions")
@@ -97,7 +99,7 @@ def get_admin_stats():
 
 @app.get("/admin/withdrawals")
 def get_admin_withdrawals():
-    """Получение списка заявок на вывод со статусом pending[cite: 6]"""
+    """Получение списка заявок на вывод со статусом pending[cite: 6, 10]"""
     with sqlite3.connect("vpn_users.db") as conn:
         cursor = conn.cursor()
         cursor.execute("SELECT id, tg_id, amount, date FROM withdrawals WHERE status = 'pending'")
@@ -112,7 +114,7 @@ class WithdrawalAction(BaseModel):
 
 @app.post("/admin/withdrawal-action")
 def admin_withdrawal_action(req: WithdrawalAction):
-    """Модерация заявки на вывод (подтверждение или отклонение)[cite: 6]"""
+    """Модерация заявки на вывод (подтверждение или отклонение)[cite: 6, 10]"""
     with sqlite3.connect("vpn_users.db") as conn:
         cursor = conn.cursor()
         new_status = 'approved' if req.action == 'approve' else 'rejected'
@@ -126,7 +128,7 @@ class AdminPromoCreate(BaseModel):
 
 @app.post("/admin/create-promo")
 def admin_create_promo(req: AdminPromoCreate):
-    """Генератор промокодов: добавление или обновление промокода[cite: 6]"""
+    """Генератор промокодов: добавление или обновление промокода[cite: 6, 10]"""
     with sqlite3.connect("vpn_users.db") as conn:
         cursor = conn.cursor()
         cursor.execute(
