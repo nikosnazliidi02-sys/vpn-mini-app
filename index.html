@@ -428,19 +428,19 @@
         </div>
     </div>
 
-    <!-- МОДАЛЬНОЕ ОКНО ВЫБОРА СПОСОБА ОПЛАТЫ (CryptoBot и СБП с реальными картинками) -->
+    <!-- МОДАЛЬНОЕ ОКНО ВЫБОРА СПОСОБА ОПЛАТЫ -->
     <div id="paymentMethodModal" class="modal-overlay" onclick="closeModal(event)">
         <div class="modal-content" onclick="event.stopPropagation()">
             <button class="modal-close" onclick="closeModal()"><i data-lucide="x" style="width: 20px;"></i></button>
             <h3 class="modal-title" style="margin-bottom: 16px; font-size: 20px;">Способ оплаты</h3>
             
             <div class="payment-option-card" onclick="selectPaymentMethod('crypto')" id="payOptCrypto" style="border-color: var(--primary);">
-                <img src="images/cryptobot.png" alt="CryptoBot" style="width: 32px; height: 32px; border-radius: 8px; object-fit: contain;">
+                <img src="https://nikosnazliidi02-sys.github.io/vpn-mini-app/images/cryptobot.png" alt="CryptoBot" style="width: 32px; height: 32px; border-radius: 8px; object-fit: contain;">
                 <span style="font-weight: 700; font-size: 15px;">CryptoBot</span>
             </div>
             
             <div class="payment-option-card" onclick="selectPaymentMethod('sbp')" id="payOptSbp">
-                <img src="images/sbp.png" alt="СБП" style="width: 32px; height: 32px; border-radius: 8px; object-fit: contain;">
+                <img src="https://nikosnazliidi02-sys.github.io/vpn-mini-app/images/sbp.png" alt="СБП" style="width: 32px; height: 32px; border-radius: 8px; object-fit: contain;">
                 <span style="font-weight: 700; font-size: 15px;">СБП</span>
             </div>
 
@@ -453,8 +453,9 @@
 
             <button type="button" class="btn btn-primary" onclick="executeFinalPayment()" id="finalPayBtn">Оплатить через CryptoBot</button>
             
+            <!-- Ссылка открывает документы с возвратом обратно к выбору способов оплаты -->
             <p style="font-size: 11px; color: var(--text-muted); text-align: center; margin-top: 14px; line-height: 1.4;">
-                Оплачивая, вы принимаете <a href="#" onclick="switchTab('documents'); closeModal();" style="color: var(--primary);">Политику конфиденциальности и Оферту</a>
+                Оплачивая, вы принимаете <a href="#" onclick="openDocuments('payment-modal'); closeModal();" style="color: var(--primary);">Политику конфиденциальности и Оферту</a>
             </p>
         </div>
     </div>
@@ -950,7 +951,7 @@
         <div class="settings-section">
             <div class="settings-section-title">Информация</div>
             <div class="settings-block">
-                <div class="settings-row" onclick="switchTab('documents')">
+                <div class="settings-row" onclick="openDocuments('settings')">
                     <div class="settings-row-left">
                         <div class="settings-icon" style="background:transparent; color: var(--primary);"><i data-lucide="file-text" style="width: 24px;"></i></div>
                         <div class="settings-row-title">Пользовательское соглашение</div>
@@ -1028,7 +1029,8 @@
     <!-- ДОКУМЕНТЫ -->
     <div id="view-documents" class="view-container">
         <div class="header-top">
-            <button class="back-btn" onclick="switchTab('settings')"><i data-lucide="chevron-left" style="width: 20px;"></i></button>
+            <!-- Кнопка назад в документах динамически возвращает туда, откуда пришли -->
+            <button class="back-btn" onclick="closeDocuments()"><i data-lucide="chevron-left" style="width: 20px;"></i></button>
             <div class="page-title">Документы</div>
         </div>
         <div class="doc-card">
@@ -1181,30 +1183,6 @@
             }
         }
 
-        async function loadTransactions() {
-            const listEl = document.getElementById('transactionsList');
-            listEl.innerHTML = `<div style="text-align: center; color: var(--text-muted); padding: 20px;">Загрузка истории...</div>`;
-            try {
-                const response = await fetch(`${API_URL}/user-transactions/${globalTgId}`);
-                const data = await response.json();
-                if (data.success && data.transactions.length > 0) {
-                    listEl.innerHTML = data.transactions.map(tx => `
-                        <div class="card" style="padding: 14px 16px; margin-bottom: 0; display: flex; justify-content: space-between; align-items: center;">
-                            <div>
-                                <div style="font-weight: 700; font-size: 15px; margin-bottom: 4px;">${tx.description}</div>
-                                <div style="font-size: 12px; color: var(--text-muted);">${tx.date}</div>
-                            </div>
-                            <div style="font-weight: 800; font-size: 16px; color: var(--success);">+${tx.amount} ₽</div>
-                        </div>
-                    `).join('');
-                } else {
-                    listEl.innerHTML = `<div style="text-align: center; color: var(--text-muted); padding: 20px;">История покупок пуста</div>`;
-                }
-            } catch (e) {
-                listEl.innerHTML = `<div style="text-align: center; color: var(--danger); padding: 20px;">Ошибка загрузки истории</div>`;
-            }
-        }
-
         const tg = window.Telegram?.WebApp;
         if(tg) {
             tg.ready();
@@ -1217,6 +1195,21 @@
         let devicesCount = 3;
         let selectedPaymentMethod = 'crypto';
         let autoRenewalEnabled = true;
+        let documentReturnView = 'settings'; // Переменная для запоминания места возврата
+
+        function openDocuments(returnTo) {
+            documentReturnView = returnTo;
+            switchTab('documents');
+        }
+
+        function closeDocuments() {
+            if (documentReturnView === 'payment-modal') {
+                switchTab('payment');
+                openPaymentMethodModal();
+            } else {
+                switchTab(documentReturnView);
+            }
+        }
 
         function selectTariff(months) {
             if(tg?.HapticFeedback) tg.HapticFeedback.impactOccurred('light');
@@ -1325,7 +1318,8 @@
                         body: JSON.stringify({ 
                             tg_id: userId, 
                             amount: parseFloat(total) / 90, 
-                            description: `Подписка на ${currentTariff} мес. (${devicesCount} устр.)`
+                            description: `Подписка на ${currentTariff} мес. (${devicesCount} устр.)`,
+                            auto_renewal: autoRenewalEnabled
                         })
                     });
                     const result = await response.json();
@@ -1363,7 +1357,8 @@
                         body: JSON.stringify({ 
                             tg_id: userId, 
                             amount: parseFloat(total), 
-                            description: `Подписка на ${currentTariff} мес. (${devicesCount} устр.) через СБП`
+                            description: `Подписка на ${currentTariff} мес. (${devicesCount} устр.) через СБП`,
+                            auto_renewal: autoRenewalEnabled
                         })
                     });
                     const result = await response.json();
@@ -1505,22 +1500,23 @@
             const targetView = document.getElementById('view-' + tabId);
             if(targetView) targetView.classList.add('active');
             
+            const summary = document.getElementById('paymentSummary');
             if(tabId === 'payment') {
                 document.getElementById('mainBottomNav').style.display = 'none';
-                document.getElementById('paymentSummary').classList.add('show');
+                summary.classList.add('show');
                 if(targetView) targetView.style.paddingBottom = '180px';
                 updatePaymentSummary();
             } else if (tabId === 'documents' || tabId === 'notifications' || tabId === 'devices' || tabId === 'history') {
                 document.getElementById('mainBottomNav').style.display = 'none';
-                document.getElementById('paymentSummary').classList.remove('show');
+                summary.classList.remove('show');
                 if(targetView) targetView.style.paddingBottom = '40px';
             } else if (tabId.startsWith('setup-')) {
                 document.getElementById('mainBottomNav').style.display = 'none';
-                document.getElementById('paymentSummary').classList.remove('show');
+                summary.classList.remove('show');
                 if(targetView) targetView.style.paddingBottom = '40px';
             } else {
                 document.getElementById('mainBottomNav').style.display = 'flex';
-                document.getElementById('paymentSummary').classList.remove('show');
+                summary.classList.remove('show');
                 document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
                 const activeNav = document.querySelector(`.nav-item[data-target="${tabId}"]`);
                 if(activeNav) activeNav.classList.add('active');
