@@ -428,23 +428,30 @@
         </div>
     </div>
 
-    <!-- МОДАЛЬНОЕ ОКНО ВЫБОРА СПОСОБА ОПЛАТЫ -->
+    <!-- МОДАЛЬНОЕ ОКНО ВЫБОРА СПОСОБА ОПЛАТЫ (CryptoBot и СБП с реальными картинками) -->
     <div id="paymentMethodModal" class="modal-overlay" onclick="closeModal(event)">
         <div class="modal-content" onclick="event.stopPropagation()">
             <button class="modal-close" onclick="closeModal()"><i data-lucide="x" style="width: 20px;"></i></button>
             <h3 class="modal-title" style="margin-bottom: 16px; font-size: 20px;">Способ оплаты</h3>
             
             <div class="payment-option-card" onclick="selectPaymentMethod('crypto')" id="payOptCrypto" style="border-color: var(--primary);">
-                <img src="images/cryptobot.png" alt="CryptoBot" style="width: 24px; height: 24px; object-fit: contain;">
+                <img src="images/cryptobot.png" alt="CryptoBot" style="width: 32px; height: 32px; border-radius: 8px; object-fit: contain;">
                 <span style="font-weight: 700; font-size: 15px;">CryptoBot</span>
             </div>
             
             <div class="payment-option-card" onclick="selectPaymentMethod('sbp')" id="payOptSbp">
-                <img src="images/sbp.png" alt="СБП" style="width: 24px; height: 24px; object-fit: contain;">
+                <img src="images/sbp.png" alt="СБП" style="width: 32px; height: 32px; border-radius: 8px; object-fit: contain;">
                 <span style="font-weight: 700; font-size: 15px;">СБП</span>
             </div>
 
-            <button type="button" class="btn btn-primary" onclick="executeFinalPayment()" id="finalPayBtn">Оплатить картой</button>
+            <div style="display: flex; align-items: center; gap: 10px; margin: 20px 0; cursor: pointer;" onclick="toggleAutoRenewal()">
+                <div id="autoRenewCheck" style="width: 20px; height: 20px; border-radius: 6px; background: var(--primary); display: flex; align-items: center; justify-content: center; color: var(--text-dark);">
+                    <i data-lucide="check" style="width: 14px;"></i>
+                </div>
+                <span style="font-size: 14px; font-weight: 600;">Автопродление</span>
+            </div>
+
+            <button type="button" class="btn btn-primary" onclick="executeFinalPayment()" id="finalPayBtn">Оплатить через CryptoBot</button>
             
             <p style="font-size: 11px; color: var(--text-muted); text-align: center; margin-top: 14px; line-height: 1.4;">
                 Оплачивая, вы принимаете <a href="#" onclick="switchTab('documents'); closeModal();" style="color: var(--primary);">Политику конфиденциальности и Оферту</a>
@@ -1208,7 +1215,7 @@
 
         let currentTariff = 12;
         let devicesCount = 3;
-        let selectedPaymentMethod = 'card';
+        let selectedPaymentMethod = 'crypto';
         let autoRenewalEnabled = true;
 
         function selectTariff(months) {
@@ -1264,6 +1271,7 @@
         function openPaymentMethodModal() {
             if(tg?.HapticFeedback) tg.HapticFeedback.impactOccurred('light');
             document.getElementById('paymentMethodModal').classList.add('show');
+            selectPaymentMethod('crypto');
             lucide.createIcons();
         }
 
@@ -1271,18 +1279,15 @@
             if(tg?.HapticFeedback) tg.HapticFeedback.impactOccurred('light');
             selectedPaymentMethod = method;
             
-            document.getElementById('payOptCard').style.borderColor = 'rgba(255,255,255,0.1)';
-            document.getElementById('payOptSbp').style.borderColor = 'rgba(255,255,255,0.1)';
             document.getElementById('payOptCrypto').style.borderColor = 'rgba(255,255,255,0.1)';
+            document.getElementById('payOptSbp').style.borderColor = 'rgba(255,255,255,0.1)';
             
-            if(method === 'card') document.getElementById('payOptCard').style.borderColor = 'var(--primary)';
-            if(method === 'sbp') document.getElementById('payOptSbp').style.borderColor = 'var(--primary)';
             if(method === 'crypto') document.getElementById('payOptCrypto').style.borderColor = 'var(--primary)';
+            if(method === 'sbp') document.getElementById('payOptSbp').style.borderColor = 'var(--primary)';
             
             const btn = document.getElementById('finalPayBtn');
             if(method === 'crypto') btn.innerText = 'Оплатить через CryptoBot';
             else if(method === 'sbp') btn.innerText = 'Оплатить через СБП';
-            else btn.innerText = 'Оплатить картой';
         }
 
         function toggleAutoRenewal() {
@@ -1341,9 +1346,44 @@
                     btn.textContent = 'Оплатить через CryptoBot';
                     btn.disabled = false;
                 }
-            } else {
-                showToast(`Оплата ${total} методом: ${selectedPaymentMethod === 'sbp' ? 'СБП' : 'Картой'}`);
-                document.getElementById('paymentMethodModal').classList.remove('show');
+            } else if (selectedPaymentMethod === 'sbp') {
+                let userId = "test_user";
+                if (window.Telegram?.WebApp?.initDataUnsafe?.user) {
+                    userId = String(window.Telegram.WebApp.initDataUnsafe.user.id);
+                }
+                
+                const btn = document.getElementById('finalPayBtn');
+                btn.textContent = 'Создание платежа...';
+                btn.disabled = true;
+
+                try {
+                    const response = await fetch(`${API_URL}/create-yookassa-invoice`, {
+                        method: "POST",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify({ 
+                            tg_id: userId, 
+                            amount: parseFloat(total), 
+                            description: `Подписка на ${currentTariff} мес. (${devicesCount} устр.) через СБП`
+                        })
+                    });
+                    const result = await response.json();
+                    if (response.ok && result.success) {
+                        document.getElementById('paymentMethodModal').classList.remove('show');
+                        if (window.Telegram?.WebApp?.openLink) {
+                            window.Telegram.WebApp.openLink(result.pay_url);
+                        } else {
+                            window.open(result.pay_url, '_blank');
+                        }
+                    } else {
+                        showToast("Ошибка ЮKassa СБП: " + (result.detail || "Не удалось создать платеж"));
+                    }
+                } catch (e) {
+                    console.error(e);
+                    showToast("Ошибка сети при обращении к серверу.");
+                } finally {
+                    btn.textContent = 'Оплатить через СБП';
+                    btn.disabled = false;
+                }
             }
         }
 
