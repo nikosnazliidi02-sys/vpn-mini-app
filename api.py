@@ -1,12 +1,22 @@
 import uuid
 import sqlite3
 from fastapi import FastAPI, HTTPException
+from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from datetime import datetime, timedelta
 import httpx
 from apscheduler.schedulers.background import BackgroundScheduler
 
 app = FastAPI()
+
+# --- ВКЛЮЧАЕМ CORS (обязательно для связи GitHub Pages и Render) ---
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],  # Разрешить запросы с любых сайтов
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 # --- НАСТРОЙКИ ЮKASSA ---
 YOOKASSA_SHOP_ID = "1444358"
@@ -31,7 +41,7 @@ def init_db():
                 expires_at TEXT,
                 status TEXT,
                 auto_renewal INTEGER DEFAULT 0,
-                payment_token TEXT  -- Поле для сохранения ID привязанной карты пользователя
+                payment_token TEXT
             )
         """)
         cursor.execute("""
@@ -50,7 +60,7 @@ class YooKassaRequest(BaseModel):
     tg_id: str
     amount: float
     description: str
-    auto_renewal: bool = False  # Статус чекбокса автопродления из интерфейса[cite: 9, 10]
+    auto_renewal: bool = False
 
 @app.post("/create-yookassa-invoice")
 async def create_yookassa_invoice(req: YooKassaRequest):
@@ -61,7 +71,7 @@ async def create_yookassa_invoice(req: YooKassaRequest):
             "currency": "RUB"
         },
         "capture": True,
-        "save_payment_method": True,  # Инструкция для ЮKassa сохранить карту для будущих автосписаний
+        "save_payment_method": True,
         "confirmation": {
             "type": "redirect",
             "return_url": "https://t.me/afroslavyanVPN_bot"
@@ -96,7 +106,6 @@ async def create_yookassa_invoice(req: YooKassaRequest):
                     
                     new_exp = (datetime.now() + timedelta(days=30)).strftime("%Y-%m-%d %H:%M:%S")
                     
-                    # Сохраняем подписку вместе с состоянием автопродления[cite: 10]
                     cursor.execute("""
                         INSERT INTO subscriptions (tg_id, expires_at, status, auto_renewal) VALUES (?, ?, 'active', ?)
                         ON CONFLICT(tg_id) DO UPDATE SET expires_at=excluded.expires_at, status='active', auto_renewal=excluded.auto_renewal
@@ -114,16 +123,29 @@ async def create_yookassa_invoice(req: YooKassaRequest):
         except Exception as e:
             raise HTTPException(status_code=500, detail=str(e))
 
-# --- ЭНДПОИНТ ДЛЯ ВЕБХУКА ОТ ЮKASSA (СОХРАНЕНИЕ ТОКЕНА КАРТЫ) ---
+# --- ДОБАВЛЕННЫЙ ЭНДПОИНТ ДЛЯ CRYPTOBOT ---
+class CryptoRequest(BaseModel):
+    tg_id: str
+    amount: float
+    description: str
+    auto_renewal: bool = False
+
+@app.post("/create-crypto-invoice")
+async def create_crypto_invoice(req: CryptoRequest):
+    # Если вы используете официальный CryptoBot API, здесь делается запрос к их шлюзу.
+    # Пока возвращаем тестовую ссылку, чтобы кнопка не выдавала ошибку сети:
+    return {
+        "success": True,
+        "pay_url": "https://t.me/CryptoBot?start=test"
+    }
+
 @app.post("/yookassa-webhook")
 async def yookassa_webhook(data: dict):
     event = data.get("event")
-    
     if event == "payment.succeeded":
         payment_object = data.get("object", {})
         metadata = payment_object.get("metadata", {})
         tg_id = metadata.get("tg_id")
-        
         payment_method = payment_object.get("payment_method", {})
         payment_token = payment_method.get("id")
         
@@ -131,36 +153,24 @@ async def yookassa_webhook(data: dict):
             with sqlite3.connect("vpn_users.db") as conn:
                 cursor = conn.cursor()
                 cursor.execute("""
-                    UPDATE subscriptions 
-                    SET payment_token = ? 
-                    WHERE tg_id = ?
+                    UPDATE subscriptions SET payment_token = ? WHERE tg_id = ?
                 """, (payment_token, str(tg_id)))
                 conn.commit()
-                print(f"Токен карты успешно сохранен для пользователя {tg_id}")
-                
     return {"status": "ok"}
 
-# --- ФУНКЦИЯ АВТОМАТИЧЕСКОГО СПИСАНИЯ ПО ТОКЕНУ КАРТЫ ---
 def charge_saved_card(payment_token: str, amount: float):
     url = "https://api.yookassa.ru/v3/payments"
     payload = {
-        "amount": {
-            "value": f"{amount:.2f}",
-            "currency": "RUB"
-        },
+        "amount": {"value": f"{amount:.2f}", "currency": "RUB"},
         "capture": True,
         "payment_method_id": payment_token,
         "description": "Автоматическое продление подписки VPN"
     }
     try:
         response = httpx.post(
-            url, 
-            json=payload, 
+            url, json=payload, 
             auth=(YOOKASSA_SHOP_ID, YOOKASSA_SECRET_KEY),
-            headers={
-                "Idempotence-Key": str(uuid.uuid4()),
-                "Content-Type": "application/json"
-            }
+            headers={"Idempotence-Key": str(uuid.uuid4()), "Content-Type": "application/json"}
         )
         result = response.json()
         if response.status_code in [200, 201] and result.get("status") == "succeeded":
@@ -169,7 +179,6 @@ def charge_saved_card(payment_token: str, amount: float):
         print(f"Ошибка при автосписании: {e}")
     return False
 
-# --- ФОНОВЫЙ ПЛАНИРОВЩИК ДЛЯ ЕЖЕДНЕВНОЙ ПРОВЕРКИ ---
 def process_auto_renewals():
     today = datetime.now().strftime("%Y-%m-%d")
     with sqlite3.connect("vpn_users.db") as conn:
@@ -178,19 +187,16 @@ def process_auto_renewals():
             SELECT tg_id, payment_token FROM subscriptions 
             WHERE date(expires_at) = ? AND auto_renewal = 1 AND status = 'active' AND payment_token IS NOT NULL
         """, (today,))
-        
         users_to_renew = cursor.fetchall()
         for tg_id, payment_token in users_to_renew:
-            amount = 199.0  # Сумма автоматического продления
-            success = charge_saved_card(payment_token, amount)
+            success = charge_saved_card(payment_token, 199.0)
             if success:
                 new_exp = (datetime.now() + timedelta(days=30)).strftime("%Y-%m-%d %H:%M:%S")
                 cursor.execute("UPDATE subscriptions SET expires_at = ? WHERE tg_id = ?", (new_exp, tg_id))
                 conn.commit()
-                print(f"Подписка пользователя {tg_id} успешно продлена автоматически.")
 
 scheduler = BackgroundScheduler()
-scheduler.add_job(process_auto_renewals, 'cron', hour=0, minute=0)  # Запуск каждый день в полночь
+scheduler.add_job(process_auto_renewals, 'cron', hour=0, minute=0)
 scheduler.start()
 
 class AutoRenewalToggle(BaseModel):
@@ -199,46 +205,31 @@ class AutoRenewalToggle(BaseModel):
 
 @app.post("/toggle-auto-renewal")
 def toggle_auto_renewal(req: AutoRenewalToggle):
-    """Эндпоинт для включения/выключения автопродления пользователем[cite: 10]"""
     with sqlite3.connect("vpn_users.db") as conn:
         cursor = conn.cursor()
-        cursor.execute(
-            "UPDATE subscriptions SET auto_renewal = ? WHERE tg_id = ?", 
-            (int(req.auto_renewal), req.tg_id)
-        )
+        cursor.execute("UPDATE subscriptions SET auto_renewal = ? WHERE tg_id = ?", (int(req.auto_renewal), req.tg_id))
         conn.commit()
     return {"success": True, "auto_renewal": req.auto_renewal}
 
 @app.get("/admin/stats")
 def get_admin_stats():
-    """Дашборд проекта: пользователи, активные подписки и общая выручка[cite: 6, 10]"""
     with sqlite3.connect("vpn_users.db") as conn:
         cursor = conn.cursor()
         cursor.execute("SELECT COUNT(DISTINCT tg_id) FROM subscriptions")
         total_users = cursor.fetchone()[0]
-        
         cursor.execute("SELECT COUNT(*) FROM subscriptions WHERE status = 'active'")
         active_subs = cursor.fetchone()[0]
-        
         cursor.execute("SELECT SUM(amount) FROM transactions")
         revenue_row = cursor.fetchone()[0]
         total_revenue = revenue_row if revenue_row else 0.0
-        
-    return {
-        "success": True,
-        "total_users": total_users,
-        "active_subs": active_subs,
-        "total_revenue": total_revenue
-    }
+    return {"success": True, "total_users": total_users, "active_subs": active_subs, "total_revenue": total_revenue}
 
 @app.get("/admin/withdrawals")
 def get_admin_withdrawals():
-    """Получение списка заявок на вывод со статусом pending[cite: 6, 10]"""
     with sqlite3.connect("vpn_users.db") as conn:
         cursor = conn.cursor()
         cursor.execute("SELECT id, tg_id, amount, date FROM withdrawals WHERE status = 'pending'")
         rows = cursor.fetchall()
-    
     withdrawals = [{"id": r[0], "tg_id": r[1], "amount": r[2], "date": r[3]} for r in rows]
     return {"success": True, "withdrawals": withdrawals}
 
@@ -248,7 +239,6 @@ class WithdrawalAction(BaseModel):
 
 @app.post("/admin/withdrawal-action")
 def admin_withdrawal_action(req: WithdrawalAction):
-    """Модерация заявки на вывод (подтверждение или отклонение)[cite: 6, 10]"""
     with sqlite3.connect("vpn_users.db") as conn:
         cursor = conn.cursor()
         new_status = 'approved' if req.action == 'approve' else 'rejected'
@@ -262,12 +252,8 @@ class AdminPromoCreate(BaseModel):
 
 @app.post("/admin/create-promo")
 def admin_create_promo(req: AdminPromoCreate):
-    """Генератор промокодов: добавление или обновление промокода[cite: 6, 10]"""
     with sqlite3.connect("vpn_users.db") as conn:
         cursor = conn.cursor()
-        cursor.execute(
-            "INSERT OR REPLACE INTO promocodes (code, discount_percent) VALUES (?, ?)", 
-            (req.code.strip().upper(), req.discount_percent)
-        )
+        cursor.execute("INSERT OR REPLACE INTO promocodes (code, discount_percent) VALUES (?, ?)", (req.code.strip().upper(), req.discount_percent))
         conn.commit()
-    return {"success": True, "message": f"Промокод {req.code.upper()} на {req.discount_percent}% успешно создан"}
+    return {"success": True, "message": f"Промокод успешно создан"}
