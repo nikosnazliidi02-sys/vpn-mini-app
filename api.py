@@ -4,6 +4,7 @@ from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
 from datetime import datetime, timedelta
 import httpx
+from apscheduler.schedulers.background import BackgroundScheduler
 
 app = FastAPI()
 
@@ -29,7 +30,8 @@ def init_db():
                 tg_id TEXT PRIMARY KEY,
                 expires_at TEXT,
                 status TEXT,
-                auto_renewal INTEGER DEFAULT 0
+                auto_renewal INTEGER DEFAULT 0,
+                payment_token TEXT  -- Поле для сохранения ID привязанной карты пользователя
             )
         """)
         cursor.execute("""
@@ -59,6 +61,7 @@ async def create_yookassa_invoice(req: YooKassaRequest):
             "currency": "RUB"
         },
         "capture": True,
+        "save_payment_method": True,  # Инструкция для ЮKassa сохранить карту для будущих автосписаний
         "confirmation": {
             "type": "redirect",
             "return_url": "https://t.me/afroslavyanVPN_bot"
@@ -93,7 +96,7 @@ async def create_yookassa_invoice(req: YooKassaRequest):
                     
                     new_exp = (datetime.now() + timedelta(days=30)).strftime("%Y-%m-%d %H:%M:%S")
                     
-                    # Сохраняем подписку вместе с состоянием автопродления
+                    # Сохраняем подписку вместе с состоянием автопродления[cite: 10]
                     cursor.execute("""
                         INSERT INTO subscriptions (tg_id, expires_at, status, auto_renewal) VALUES (?, ?, 'active', ?)
                         ON CONFLICT(tg_id) DO UPDATE SET expires_at=excluded.expires_at, status='active', auto_renewal=excluded.auto_renewal
@@ -111,13 +114,92 @@ async def create_yookassa_invoice(req: YooKassaRequest):
         except Exception as e:
             raise HTTPException(status_code=500, detail=str(e))
 
+# --- ЭНДПОИНТ ДЛЯ ВЕБХУКА ОТ ЮKASSA (СОХРАНЕНИЕ ТОКЕНА КАРТЫ) ---
+@app.post("/yookassa-webhook")
+async def yookassa_webhook(data: dict):
+    event = data.get("event")
+    
+    if event == "payment.succeeded":
+        payment_object = data.get("object", {})
+        metadata = payment_object.get("metadata", {})
+        tg_id = metadata.get("tg_id")
+        
+        payment_method = payment_object.get("payment_method", {})
+        payment_token = payment_method.get("id")
+        
+        if tg_id and payment_token:
+            with sqlite3.connect("vpn_users.db") as conn:
+                cursor = conn.cursor()
+                cursor.execute("""
+                    UPDATE subscriptions 
+                    SET payment_token = ? 
+                    WHERE tg_id = ?
+                """, (payment_token, str(tg_id)))
+                conn.commit()
+                print(f"Токен карты успешно сохранен для пользователя {tg_id}")
+                
+    return {"status": "ok"}
+
+# --- ФУНКЦИЯ АВТОМАТИЧЕСКОГО СПИСАНИЯ ПО ТОКЕНУ КАРТЫ ---
+def charge_saved_card(payment_token: str, amount: float):
+    url = "https://api.yookassa.ru/v3/payments"
+    payload = {
+        "amount": {
+            "value": f"{amount:.2f}",
+            "currency": "RUB"
+        },
+        "capture": True,
+        "payment_method_id": payment_token,
+        "description": "Автоматическое продление подписки VPN"
+    }
+    try:
+        response = httpx.post(
+            url, 
+            json=payload, 
+            auth=(YOOKASSA_SHOP_ID, YOOKASSA_SECRET_KEY),
+            headers={
+                "Idempotence-Key": str(uuid.uuid4()),
+                "Content-Type": "application/json"
+            }
+        )
+        result = response.json()
+        if response.status_code in [200, 201] and result.get("status") == "succeeded":
+            return True
+    except Exception as e:
+        print(f"Ошибка при автосписании: {e}")
+    return False
+
+# --- ФОНОВЫЙ ПЛАНИРОВЩИК ДЛЯ ЕЖЕДНЕВНОЙ ПРОВЕРКИ ---
+def process_auto_renewals():
+    today = datetime.now().strftime("%Y-%m-%d")
+    with sqlite3.connect("vpn_users.db") as conn:
+        cursor = conn.cursor()
+        cursor.execute("""
+            SELECT tg_id, payment_token FROM subscriptions 
+            WHERE date(expires_at) = ? AND auto_renewal = 1 AND status = 'active' AND payment_token IS NOT NULL
+        """, (today,))
+        
+        users_to_renew = cursor.fetchall()
+        for tg_id, payment_token in users_to_renew:
+            amount = 199.0  # Сумма автоматического продления
+            success = charge_saved_card(payment_token, amount)
+            if success:
+                new_exp = (datetime.now() + timedelta(days=30)).strftime("%Y-%m-%d %H:%M:%S")
+                cursor.execute("UPDATE subscriptions SET expires_at = ? WHERE tg_id = ?", (new_exp, tg_id))
+                conn.commit()
+                print(f"Подписка пользователя {tg_id} успешно продлена автоматически.")
+
+scheduler = BackgroundScheduler()
+scheduler.add_job(process_auto_renewals, 'cron', hour=0, minute=0)  # Запуск каждый день в полночь
+scheduler.start()
+
 class AutoRenewalToggle(BaseModel):
     tg_id: str
     auto_renewal: bool
 
 @app.post("/toggle-auto-renewal")
 def toggle_auto_renewal(req: AutoRenewalToggle):
-    """Эндпоинт для включения/выключения автопродления пользователем"""
+    """Эндпоинт для включения/выключения автопродления пользователем[cite: 10]"""
     with sqlite3.connect("vpn_users.db") as conn:
         cursor = conn.cursor()
         cursor.execute(
