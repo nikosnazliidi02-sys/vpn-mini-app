@@ -9,7 +9,7 @@ import httpx
 # Настройка логирования для отслеживания ошибок
 logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
 
-TOKEN = '8882701794:AAGk3m59AeZo5wChq5zSiy0t1q3DiKm-cn4'
+TOKEN = '8882701794:AAHKFAMyWkSSjE_RecKJYt6ZvL6DAG7np_M'
 ADMIN_ID = "883071272"
 
 bot = telebot.TeleBot(TOKEN)
@@ -29,21 +29,56 @@ def run_async_task(coro):
     """Безопасный запуск асинхронных функций из синхронных обработчиков telebot"""
     asyncio.run_coroutine_threadsafe(coro, loop)
 
-# Функция для получения всех ID пользователей из базы данных vpn_users.db
+# Автоматическое создание таблицы bot_users для сбора пользователей при старте
+def init_db():
+    try:
+        conn = sqlite3.connect('vpn_users.db')
+        cursor = conn.cursor()
+        cursor.execute('''
+            CREATE TABLE IF NOT EXISTS bot_users (
+                tg_id TEXT PRIMARY KEY
+            )
+        ''')
+        conn.commit()
+        conn.close()
+    except Exception as e:
+        logging.error(f"Ошибка инициализации базы данных: {e}")
+
+init_db()
+
+# Функция для получения всех ID пользователей из таблицы bot_users
 def get_all_users() -> list:
     try:
         conn = sqlite3.connect('vpn_users.db')
         cursor = conn.cursor()
-        cursor.execute("SELECT tg_id FROM notification_settings")
+        cursor.execute("SELECT tg_id FROM bot_users")
         rows = cursor.fetchall()
         conn.close()
-        return [int(row[0]) for row in rows if str(row[0]).isdigit()]
+        
+        users = []
+        for row in rows:
+            user_id = row[0]
+            if str(user_id).isdigit():
+                users.append(int(user_id))
+        return users
     except Exception as e:
         logging.error(f"Ошибка чтения базы данных: {e}")
         return []
 
 @bot.message_handler(commands=['start'])
 def send_welcome(message):
+    user_id = str(message.from_user.id)
+    
+    # Автоматически сохраняем пользователя в базу при каждом нажатии /start
+    try:
+        conn = sqlite3.connect('vpn_users.db')
+        cursor = conn.cursor()
+        cursor.execute("INSERT OR IGNORE INTO bot_users (tg_id) VALUES (?)", (user_id,))
+        conn.commit()
+        conn.close()
+    except Exception as e:
+        logging.error(f"Ошибка сохранения пользователя в базу: {e}")
+
     user_name = message.from_user.first_name or message.from_user.username or "друг"
     welcome_text = (
         f"**Приветствуем тебя, {user_name}!**\n\n"
@@ -65,7 +100,7 @@ def send_welcome(message):
     markup.add(InlineKeyboardButton(text="🆓 Пробный период (3 дн.)", callback_data="trial_period"))
     
     try:
-        with open('logo.png', 'rb') as photo:
+        with open('logog.png', 'rb') as photo:
             bot.send_photo(chat_id=message.chat.id, photo=photo, caption=welcome_text, parse_mode='Markdown', reply_markup=markup)
     except Exception:
         bot.send_message(chat_id=message.chat.id, text=welcome_text, parse_mode='Markdown', reply_markup=markup)
@@ -169,9 +204,7 @@ def handle_query(call):
 
     elif call.data == "cancel_broadcast":
         if str(call.from_user.id) != ADMIN_ID: return
-        # Сбрасываем ожидание шага через очистку обработчика (если пользователь еще не отправил пост)
         bot.clear_step_handler_by_chat_id(call.message.chat.id)
-        # Если рассылка уже шла в фоне — ставим флаг отмены
         active_broadcasts[ADMIN_ID] = False
         bot.edit_message_text("❌ Рассылка отменена.", call.message.chat.id, call.message.message_id)
 
@@ -200,10 +233,9 @@ def process_create_promo(message):
 async def background_broadcast(users: list, message_to_copy):
     success = 0
     blocked = 0
-    active_broadcasts[ADMIN_ID] = True  дф  # Включаем флаг активности рассылки
+    active_broadcasts[ADMIN_ID] = True
     
     for user_id in users:
-        # Проверяем, не отменил ли админ рассылку во время процесса
         if not active_broadcasts.get(ADMIN_ID, False):
             try:
                 bot.send_message(ADMIN_ID, "⚠️ Рассылка была прервана (отменена администратором).")
@@ -214,7 +246,7 @@ async def background_broadcast(users: list, message_to_copy):
         try:
             bot.copy_message(chat_id=user_id, from_chat_id=message_to_copy.chat.id, message_id=message_to_copy.message_id)
             success += 1
-            await asyncio.sleep(0.05)  # Пауза против лимитов Telegram (FloodWait)
+            await asyncio.sleep(0.05)
         except Exception:
             blocked += 1
 
@@ -244,11 +276,9 @@ def process_broadcast(message):
     
     bot.send_message(message.chat.id, f"🚀 Рассылка запущена для {len(users)} пользователей. Ожидайте отчет.", reply_markup=markup)
     
-    # Запуск фонового процесса
     run_async_task(background_broadcast(users, message))
 
 if __name__ == '__main__':
-    # Запуск фонового потока для asyncio, чтобы бот не блокировался
     def start_loop(loop):
         asyncio.set_event_loop(loop)
         loop.run_forever()

@@ -1,5 +1,6 @@
 import uuid
 import sqlite3
+import random
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
@@ -52,9 +53,83 @@ def init_db():
                 promo_alerts BOOLEAN DEFAULT 0
             )
         """)
+        cursor.execute("""
+            CREATE TABLE IF NOT EXISTS withdrawals (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                tg_id TEXT,
+                amount REAL,
+                status TEXT DEFAULT 'pending',
+                date TEXT
+            )
+        """)
+        cursor.execute("""
+            CREATE TABLE IF NOT EXISTS promocodes (
+                code TEXT PRIMARY KEY,
+                discount_percent INTEGER
+            )
+        """)
+        cursor.execute("""
+            CREATE TABLE IF NOT EXISTS email_verifications (
+                tg_id TEXT PRIMARY KEY,
+                email TEXT,
+                code TEXT,
+                expires_at DATETIME,
+                is_verified BOOLEAN DEFAULT 0
+            )
+        """)
         conn.commit()
 
 init_db()
+
+# --- ЭНДПОИНТЫ ПРОФИЛЯ, СТАТИСТИКИ И ПРИВЯЗКИ ПОЧТЫ ---
+@app.get("/user-profile/{tg_id}")
+def get_user_profile(tg_id: str):
+    with sqlite3.connect("vpn_users.db") as conn:
+        cursor = conn.cursor()
+        cursor.execute("SELECT expires_at, status, auto_renewal FROM subscriptions WHERE tg_id = ?", (tg_id,))
+        sub = cursor.fetchone()
+        
+        cursor.execute("SELECT email, is_verified FROM email_verifications WHERE tg_id = ?", (tg_id,))
+        email_data = cursor.fetchone()
+        
+    return {
+        "success": True,
+        "subscription": {
+            "expires_at": sub[0] if sub else None,
+            "status": sub[1] if sub else "inactive",
+            "auto_renewal": bool(sub[2]) if sub else False
+        } if sub else None,
+        "email": email_data[0] if email_data else None,
+        "is_verified": bool(email_data[1]) if email_data else False
+    }
+
+@app.get("/user-stats/{tg_id}")
+def get_user_stats(tg_id: str):
+    return {
+        "success": True,
+        "traffic_used": "0 MB",
+        "active_devices": 1
+    }
+
+class EmailVerifyRequest(BaseModel):
+    tg_id: str
+    email: str
+
+@app.post("/send-code")
+def send_email_code(req: EmailVerifyRequest):
+    code = str(random.randint(1000, 9999))
+    expires_at = datetime.now() + timedelta(minutes=10)
+    
+    with sqlite3.connect("vpn_users.db") as conn:
+        cursor = conn.cursor()
+        cursor.execute("""
+            INSERT INTO email_verifications (tg_id, email, code, expires_at, is_verified)
+            VALUES (?, ?, ?, ?, 0)
+            ON CONFLICT(tg_id) DO UPDATE SET email=excluded.email, code=excluded.code, expires_at=excluded.expires_at
+        """, (req.tg_id, req.email, code, expires_at))
+        conn.commit()
+    
+    return {"success": True, "message": "Код отправлен"}
 
 class YooKassaRequest(BaseModel):
     tg_id: str
