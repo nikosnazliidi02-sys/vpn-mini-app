@@ -62,7 +62,7 @@
             to { opacity: 1; transform: translateY(0); }
         }
 
-        /* Центрированный заголовок без стрелки назад */
+        /* Главные экраны: центрированный заголовок без стрелки назад */
         .header-top {
             display: flex;
             align-items: center;
@@ -71,6 +71,24 @@
             justify-content: center;
             position: relative;
         }
+        
+        /* Внутренние экраны: со стрелкой назад слева и центрированным заголовком */
+        .header-top.with-back {
+            justify-content: space-between;
+        }
+
+        .back-btn {
+            width: 40px; height: 40px;
+            border-radius: 50%;
+            background: var(--bg-card);
+            border: 1px solid rgba(255,255,255,0.08); color: var(--text-main);
+            display: flex; align-items: center; justify-content: center;
+            cursor: pointer;
+            transition: transform 0.2s ease, background-color 0.2s ease;
+            flex-shrink: 0;
+        }
+        .back-btn:active { transform: scale(0.92); }
+
         .page-title {
             background: var(--bg-card);
             border: 1px solid rgba(255,255,255,0.08);
@@ -78,6 +96,15 @@
             border-radius: 100px;
             font-size: 15px; font-weight: 700;
             text-align: center;
+            position: absolute;
+            left: 50%;
+            transform: translateX(-50%);
+        }
+        
+        /* Если заголовок один на странице (без стрелки), убираем абсолютное позиционирование */
+        .header-top:not(.with-back) .page-title {
+            position: static;
+            transform: none;
         }
 
         .card {
@@ -538,7 +565,11 @@
 
     <!-- ОКНО: Где настраиваем? (setup-device) -->
     <div id="view-setup-device" class="view-container">
-        <div class="header-top"><div class="page-title">Настройка VPN</div></div>
+        <div class="header-top with-back">
+            <button class="back-btn" onclick="switchTab('home')"><i data-lucide="chevron-left" style="width: 20px;"></i></button>
+            <div class="page-title">Настройка VPN</div>
+            <div style="width: 40px;"></div>
+        </div>
         <div class="setup-screen">
             <div class="setup-icon-box"><i data-lucide="smartphone" style="width: 32px; height: 32px; color: var(--primary);"></i></div>
             <h2 class="setup-title">Где настраиваем?</h2>
@@ -561,7 +592,11 @@
 
     <!-- ОКНО: Выбор приложения (setup-app - Универсальное) -->
     <div id="view-setup-app" class="view-container">
-        <div class="header-top"><div class="page-title">Выбор приложения</div></div>
+        <div class="header-top with-back">
+            <button class="back-btn" onclick="switchTab('setup-device')"><i data-lucide="chevron-left" style="width: 20px;"></i></button>
+            <div class="page-title">Выбор приложения</div>
+            <div style="width: 40px;"></div>
+        </div>
         <div class="setup-screen">
             <div class="setup-icon-box"><i data-lucide="cloud-download" style="width: 32px; height: 32px; color: var(--primary);"></i></div>
             <h2 class="setup-title">Какое приложение?</h2>
@@ -586,7 +621,11 @@
 
     <!-- ОКНО: Список других устройств (setup-other) -->
     <div id="view-setup-other" class="view-container">
-        <div class="header-top"><div class="page-title">Другие устройства</div></div>
+        <div class="header-top with-back">
+            <button class="back-btn" onclick="switchTab('setup-device')"><i data-lucide="chevron-left" style="width: 20px;"></i></button>
+            <div class="page-title">Другие устройства</div>
+            <div style="width: 40px;"></div>
+        </div>
         <div class="setup-screen" style="padding-top: 0; min-height: auto;">
             <div class="setup-icon-box" style="margin-top: 10px;"><i data-lucide="monitor-smartphone" style="width: 32px; height: 32px; color: var(--primary);"></i></div>
             <h2 class="setup-title">На другом устройстве</h2>
@@ -661,7 +700,11 @@
     <!-- ИНДИВИДУАЛЬНЫЕ ОКНА УСТРОЙСТВ -->
     <!-- iOS -->
     <div id="view-setup-ios" class="view-container">
-        <div class="header-top"><div class="page-title">Настройка iOS</div></div>
+        <div class="header-top with-back">
+            <button class="back-btn" onclick="switchTab('setup-other')"><i data-lucide="chevron-left" style="width: 20px;"></i></button>
+            <div class="page-title">Настройка iOS</div>
+            <div style="width: 40px;"></div>
+        </div>
         <div class="setup-screen" style="padding-top:0;">
             <div class="setup-icon-box"><i data-lucide="apple" style="width: 32px; height: 32px; color: var(--primary);"></i></div>
             <h2 class="setup-title" style="margin-bottom: 30px;">Настроить на iOS</h2>
@@ -689,7 +732,11 @@
 
     <!-- Android -->
     <div id="view-setup-android" class="view-container">
-        <div class="header-top"><div class="page-title">Настройка Android</div></div>
+        <div class="header-top with-back">
+            <button class="back-btn" onclick="switchTab('setup-other')"><i data-lucide="chevron-left" style="width: 20px;"></i></button>
+            <div class="page-title">Настройка Android</div>
+            <div style="width: 40px;"></div>
+        </div>
         <div class="setup-screen" style="padding-top:0;">
             <div class="setup-icon-box"><i data-lucide="play" style="width: 32px; height: 32px; color: var(--primary);"></i></div>
             <h2 class="setup-title" style="margin-bottom: 30px;">Настроить на Android</h2>
@@ -717,7 +764,11 @@
 
     <!-- macOS -->
     <div id="view-setup-macos" class="view-container">
-        <div class="header-top"><div class="page-title">Настройка macOS</div></div>
+        <div class="header-top with-back">
+            <button class="back-btn" onclick="switchTab('setup-other')"><i data-lucide="chevron-left" style="width: 20px;"></i></button>
+            <div class="page-title">Настройка macOS</div>
+            <div style="width: 40px;"></div>
+        </div>
         <div class="setup-screen" style="padding-top:0;">
             <div class="setup-icon-box"><i data-lucide="monitor" style="width: 32px; height: 32px; color: var(--primary);"></i></div>
             <h2 class="setup-title" style="margin-bottom: 30px;">Настроить на macOS</h2>
@@ -745,7 +796,11 @@
 
     <!-- TV -->
     <div id="view-setup-tv" class="view-container">
-        <div class="header-top"><div class="page-title">Настройка TV</div></div>
+        <div class="header-top with-back">
+            <button class="back-btn" onclick="switchTab('setup-other')"><i data-lucide="chevron-left" style="width: 20px;"></i></button>
+            <div class="page-title">Настройка TV</div>
+            <div style="width: 40px;"></div>
+        </div>
         <div class="setup-screen" style="padding-top:0;">
             <div class="setup-icon-box"><i data-lucide="tv" style="width: 32px; height: 32px; color: var(--primary);"></i></div>
             <h2 class="setup-title" style="margin-bottom: 30px;">Настроить на TV</h2>
@@ -773,7 +828,11 @@
 
     <!-- Windows -->
     <div id="view-setup-windows" class="view-container">
-        <div class="header-top"><div class="page-title">Настройка Windows</div></div>
+        <div class="header-top with-back">
+            <button class="back-btn" onclick="switchTab('setup-other')"><i data-lucide="chevron-left" style="width: 20px;"></i></button>
+            <div class="page-title">Настройка Windows</div>
+            <div style="width: 40px;"></div>
+        </div>
         <div class="setup-screen" style="padding-top:0;">
             <div class="setup-icon-box"><i data-lucide="layout-dashboard" style="width: 32px; height: 32px; color: var(--primary);"></i></div>
             <h2 class="setup-title" style="margin-bottom: 30px;">Настроить на Windows</h2>
@@ -801,7 +860,11 @@
 
     <!-- Linux -->
     <div id="view-setup-linux" class="view-container">
-        <div class="header-top"><div class="page-title">Настройка Linux</div></div>
+        <div class="header-top with-back">
+            <button class="back-btn" onclick="switchTab('setup-other')"><i data-lucide="chevron-left" style="width: 20px;"></i></button>
+            <div class="page-title">Настройка Linux</div>
+            <div style="width: 40px;"></div>
+        </div>
         <div class="setup-screen" style="padding-top:0;">
             <div class="setup-icon-box"><i data-lucide="terminal" style="width: 32px; height: 32px; color: var(--primary);"></i></div>
             <h2 class="setup-title" style="margin-bottom: 30px;">Настроить на Linux</h2>
@@ -829,7 +892,11 @@
 
     <!-- Chrome -->
     <div id="view-setup-chrome" class="view-container">
-        <div class="header-top"><div class="page-title">Расширение Chrome</div></div>
+        <div class="header-top with-back">
+            <button class="back-btn" onclick="switchTab('setup-other')"><i data-lucide="chevron-left" style="width: 20px;"></i></button>
+            <div class="page-title">Расширение Chrome</div>
+            <div style="width: 40px;"></div>
+        </div>
         <div class="setup-screen" style="padding-top:0;">
             <div class="setup-icon-box"><i data-lucide="chrome" style="width: 32px; height: 32px; color: var(--primary);"></i></div>
             <h2 class="setup-title" style="margin-bottom: 30px;">Настроить в Chrome</h2>
@@ -857,7 +924,11 @@
 
     <!-- ОКНО 3: Ваш ключ (setup-key - Для этого устройства) -->
     <div id="view-setup-key" class="view-container">
-        <div class="header-top"><div class="page-title">Ваш ключ</div></div>
+        <div class="header-top with-back">
+            <button class="back-btn" onclick="switchTab('setup-app')"><i data-lucide="chevron-left" style="width: 20px;"></i></button>
+            <div class="page-title">Ваш ключ</div>
+            <div style="width: 40px;"></div>
+        </div>
         <div class="setup-screen">
             <div class="setup-icon-box"><i data-lucide="link" style="width: 32px; height: 32px; color: var(--primary);"></i></div>
             <h2 class="setup-title">Ваш ключ</h2>
@@ -880,7 +951,11 @@
 
     <!-- ОКНО 4: Готово! (setup-done) -->
     <div id="view-setup-done" class="view-container">
-        <div class="header-top"><div class="page-title">Готово</div></div>
+        <div class="header-top with-back">
+            <button class="back-btn" onclick="switchTab('setup-key')"><i data-lucide="chevron-left" style="width: 20px;"></i></button>
+            <div class="page-title">Готово</div>
+            <div style="width: 40px;"></div>
+        </div>
         <div class="setup-screen">
             <div class="setup-icon-box" style="background: rgba(16,185,129,0.15); border-color: rgba(16,185,129,0.3); color: var(--success);"><i data-lucide="check" style="width: 32px; height: 32px;"></i></div>
             <h2 class="setup-title">Готово!</h2>
@@ -905,7 +980,11 @@
 
     <!-- ОСТАЛЬНЫЕ ТАБЫ -->
     <div id="view-payment" class="view-container">
-        <div class="header-top"><div class="page-title">Оплата подписки</div></div>
+        <div class="header-top with-back">
+            <button class="back-btn" onclick="switchTab('home')"><i data-lucide="chevron-left" style="width: 20px;"></i></button>
+            <div class="page-title">Оплата подписки</div>
+            <div style="width: 40px;"></div>
+        </div>
         <div class="payment-header">
             <h2>Интернет на <span class="text-primary">ваших условиях</span></h2>
             <p>Доступ ко всему миру и высокий уровень защиты — в одном тарифе</p>
@@ -946,7 +1025,11 @@
     </div>
 
     <div id="view-ref" class="view-container">
-        <div class="header-top"><div class="page-title">Рефералы</div></div>
+        <div class="header-top with-back">
+            <button class="back-btn" onclick="switchTab('home')"><i data-lucide="chevron-left" style="width: 20px;"></i></button>
+            <div class="page-title">Рефералы</div>
+            <div style="width: 40px;"></div>
+        </div>
         <div class="ref-grid">
             <div class="ref-col-left">
                 <div class="ref-stat-card"><div class="ref-stat-label">Баланс</div><div class="ref-stat-val" id="refBalanceVal">0 ₽</div></div>
@@ -967,7 +1050,11 @@
     </div>
 
     <div id="view-support" class="view-container">
-        <div class="header-top"><div class="page-title">Поддержка</div></div>
+        <div class="header-top with-back">
+            <button class="back-btn" onclick="switchTab('home')"><i data-lucide="chevron-left" style="width: 20px;"></i></button>
+            <div class="page-title">Поддержка</div>
+            <div style="width: 40px;"></div>
+        </div>
         <div class="faq-list">
             <div class="faq-item" onclick="openModal(1)"><div class="faq-num">1</div><div class="faq-title">VPN не подключается</div><div class="faq-arrow"><i data-lucide="arrow-right" style="width: 18px;"></i></div></div>
             <div class="faq-item" onclick="openModal(2)"><div class="faq-num">2</div><div class="faq-title">Как установить VPN?</div><div class="faq-arrow"><i data-lucide="arrow-right" style="width: 18px;"></i></div></div>
@@ -1087,7 +1174,11 @@
 
     <!-- ЭКРАН УВЕДОМЛЕНИЙ -->
     <div id="view-notifications" class="view-container">
-        <div class="header-top"><div class="page-title">Уведомления</div></div>
+        <div class="header-top with-back">
+            <button class="back-btn" onclick="switchTab('settings')"><i data-lucide="chevron-left" style="width: 20px;"></i></button>
+            <div class="page-title">Уведомления</div>
+            <div style="width: 40px;"></div>
+        </div>
         <div class="settings-block">
             <div class="settings-row">
                 <div class="settings-row-left"><div class="settings-row-title">Окончание подписки</div></div>
@@ -1106,7 +1197,11 @@
 
     <!-- ЭКРАН УСТРОЙСТВ -->
     <div id="view-devices" class="view-container">
-        <div class="header-top"><div class="page-title">Устройства</div></div>
+        <div class="header-top with-back">
+            <button class="back-btn" onclick="switchTab('settings')"><i data-lucide="chevron-left" style="width: 20px;"></i></button>
+            <div class="page-title">Устройства</div>
+            <div style="width: 40px;"></div>
+        </div>
         
         <div class="device-list-group">
             <div class="device-list-title">Текущее устройство</div>
@@ -1149,7 +1244,11 @@
 
     <!-- ДОКУМЕНТЫ -->
     <div id="view-documents" class="view-container">
-        <div class="header-top"><div class="page-title">Документы</div></div>
+        <div class="header-top with-back">
+            <button class="back-btn" onclick="closeDocuments()"><i data-lucide="chevron-left" style="width: 20px;"></i></button>
+            <div class="page-title">Документы</div>
+            <div style="width: 40px;"></div>
+        </div>
         <div class="doc-card">
             <div class="doc-section">
                 <div class="doc-title">Политика конфиденциальности</div>
@@ -1716,7 +1815,7 @@
                         headers: { "Content-Type": "application/json" },
                         body: JSON.stringify({ 
                             tg_id: userId, 
-                            amount: parseFloat(total) / 90, 
+                            amount: parseFloat(total), 
                             description: `Подписка на ${currentTariff} мес. (${devicesCount} устр.)`,
                             auto_renewal: autoRenewalEnabled,
                             promo_code: appliedPromoCode
@@ -2020,14 +2119,14 @@
                 try {
                     const response = await fetch(`${API_URL}/verify-code`, {
                         method: "POST",
-                        headers: { "Content-Type": "application/json" },
+                    headers: { "Content-Type": "application/json" },
                         body: JSON.stringify({ tg_id: userId, code: codeInput })
                     });
 
                     const result = await response.json();
                     if (response.ok && result.success) {
                         showToast('Почта успешно привязана!');
-                        document.getElementById('emailModal').classList.remove('show');
+                        document.getElementById('emailModal').classList.remove('sow');
                         currentModalStep = 1; 
                         document.getElementById('emailSubtitle').textContent = globalEmail;
                         document.getElementById('emailAction').innerHTML = '<div class="check-circle"><i data-lucide="check" style="width: 20px;"></i></div>';
