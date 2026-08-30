@@ -20,6 +20,7 @@ app.add_middleware(
 
 YOOKASSA_SHOP_ID = "1444358"
 YOOKASSA_SECRET_KEY = "live_7YgYIW8xKJsRDfqlSt2P-fqubRhw4Fs8eUr-R5wJYq4"
+CRYPTO_BOT_TOKEN = "628351:AAxhHcnYiItWxMgeFGQqqs1aiqUjEdJ8F59"
 
 def init_db():
     with sqlite3.connect("vpn_users.db") as conn:
@@ -417,17 +418,42 @@ async def create_crypto_invoice(req: CryptoRequest):
             if row and row[0] > 0:
                 final_amount = req.amount * (1 - row[0] / 100)
 
-    with sqlite3.connect("vpn_users.db") as conn:
-        cursor = conn.cursor()
-        cursor.execute("INSERT INTO transactions (tg_id, amount, description, date) VALUES (?, ?, ?, ?)", 
-                       (req.tg_id, final_amount, req.description, datetime.now().strftime("%Y-%m-%d %H:%M")))
-        new_exp = (datetime.now() + timedelta(days=30)).strftime("%Y-%m-%d %H:%M:%S")
-        cursor.execute("""
-            INSERT INTO subscriptions (tg_id, expires_at, status) VALUES (?, ?, 'active')
-            ON CONFLICT(tg_id) DO UPDATE SET expires_at=excluded.expires_at, status='active'
-        """, (req.tg_id, new_exp))
-        conn.commit()
-    return {"success": True, "pay_url": "https://t.me/CryptoBot?start=test"}
+    url = "https://pay.crypt.bot/api/createInvoice"
+    headers = {"Crypto-Pay-API-Token": CRYPTO_BOT_TOKEN, "Content-Type": "application/json"}
+    payload = {
+        "asset": "RUB",
+        "amount": f"{final_amount:.2f}",
+        "description": req.description,
+        "payload": f"tg_id:{req.tg_id}",
+        "allow_comments": False,
+        "allow_anonymous": False,
+        "expires_in": 3600
+    }
+
+    async with httpx.AsyncClient() as client:
+        try:
+            response = await client.post(url, json=payload, headers=headers)
+            result = response.json()
+            if response.status_code == 200 and result.get("ok"):
+                invoice = result["result"]
+                pay_url = invoice["bot_invoice_url"]
+                
+                with sqlite3.connect("vpn_users.db") as conn:
+                    cursor = conn.cursor()
+                    cursor.execute("INSERT INTO transactions (tg_id, amount, description, date) VALUES (?, ?, ?, ?)", 
+                                   (req.tg_id, final_amount, req.description, datetime.now().strftime("%Y-%m-%d %H:%M")))
+                    new_exp = (datetime.now() + timedelta(days=30)).strftime("%Y-%m-%d %H:%M:%S")
+                    cursor.execute("""
+                        INSERT INTO subscriptions (tg_id, expires_at, status) VALUES (?, ?, 'active')
+                        ON CONFLICT(tg_id) DO UPDATE SET expires_at=excluded.expires_at, status='active'
+                    """, (req.tg_id, new_exp))
+                    conn.commit()
+                    
+                return {"success": True, "pay_url": pay_url}
+            else:
+                raise HTTPException(status_code=400, detail=result.get("error", {}).get("message", "Ошибка создания счета в CryptoBot"))
+        except Exception as e:
+            raise HTTPException(status_code=500, detail=str(e))
 
 @app.post("/yookassa-webhook")
 async def yookassa_webhook(data: dict):
