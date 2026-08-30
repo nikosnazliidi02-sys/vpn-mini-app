@@ -62,31 +62,22 @@
             to { opacity: 1; transform: translateY(0); }
         }
 
+        /* Центрированный заголовок без стрелки назад */
         .header-top {
             display: flex;
             align-items: center;
             margin-bottom: 24px;
             padding-top: 8px;
-            justify-content: space-between;
+            justify-content: center;
+            position: relative;
         }
-        .header-left { display: flex; align-items: center; }
-        .back-btn {
-            width: 40px; height: 40px;
-            border-radius: 50%;
-            background: var(--bg-card);
-            border: 1px solid rgba(255,255,255,0.08); color: var(--text-main);
-            display: flex; align-items: center; justify-content: center;
-            cursor: pointer; margin-right: 12px;
-            transition: transform 0.2s ease, background-color 0.2s ease;
-        }
-        .back-btn:active { transform: scale(0.92); }
-
         .page-title {
             background: var(--bg-card);
             border: 1px solid rgba(255,255,255,0.08);
-            padding: 10px 20px;
+            padding: 10px 24px;
             border-radius: 100px;
             font-size: 15px; font-weight: 700;
+            text-align: center;
         }
 
         .card {
@@ -111,7 +102,8 @@
         .btn-white { background: var(--text-main); color: var(--text-dark); }
         .btn-dark { background: rgba(255,255,255,0.08); color: var(--text-main); border: 1px solid rgba(255,255,255,0.06); }
         .btn-outline { background: transparent; border: 1px solid var(--primary); color: var(--primary); }
-        .btn-danger { background: rgba(239, 68, 68, 0.15); color: var(--danger); border: 1px solid rgba(239, 68, 68, 0.3); }
+        .btn-danger-solid { background: #5c2b2b; color: #ff8585; border: none; }
+        .btn-danger-solid:disabled { background: #2a1f1f; color: #664444; cursor: not-allowed; }
 
         /* --- TOAST NOTIFICATIONS --- */
         .toast-container {
@@ -451,6 +443,34 @@
         </div>
     </div>
 
+    <!-- МОДАЛЬНОЕ ОКНО СБРОСА ВСЕХ УСТРОЙСТВ (БЕЗОПАСНОСТЬ) -->
+    <div id="revokeModal" class="modal-overlay" onclick="closeModal(event)">
+        <div class="modal-content" onclick="event.stopPropagation()" style="max-width: 360px;">
+            <div style="display: flex; justify-content: flex-end; margin-bottom: 8px;">
+                <span onclick="closeModal()" style="color: var(--success); font-weight: 700; font-size: 14px; cursor: pointer;">Отмена</span>
+            </div>
+            <h3 class="modal-title" style="font-size: 19px; line-height: 1.3; margin-bottom: 16px;">Сбросить все устройства и обновить ключ доступа?</h3>
+            
+            <div style="background: rgba(239, 68, 68, 0.1); border: 1px solid rgba(239, 68, 68, 0.2); border-radius: 12px; padding: 12px; margin-bottom: 16px; color: #ff8585; font-size: 13px; line-height: 1.4;">
+                Все подключенные устройства будут немедленно отключены от подписки
+            </div>
+
+            <p style="font-size: 13px; color: var(--text-muted); line-height: 1.4; margin-bottom: 16px;">
+                Текущий ключ доступа будет безвозвратно деактивирован и заменён новым. Старый ключ больше не сможет использоваться для подключения устройств.<br><br>
+                Чтобы восстановить доступ, вам потребуется заново подключить каждое устройство с помощью нового ключа.
+            </p>
+
+            <div style="border-top: 1px dashed rgba(255,255,255,0.1); padding-top: 16px; margin-bottom: 20px; display: flex; align-items: flex-start; gap: 12px; cursor: pointer;" onclick="toggleRevokeCheckbox()">
+                <div id="revokeCheckbox" style="width: 22px; height: 22px; border-radius: 6px; border: 2px solid var(--primary); display: flex; align-items: center; justify-content: center; flex-shrink: 0; transition: 0.2s;">
+                    <i data-lucide="check" style="width: 14px; color: var(--text-dark); display: none;" id="revokeCheckIcon"></i>
+                </div>
+                <span style="font-size: 13px; color: var(--text-main); line-height: 1.3;">Я понимаю, что старый ключ перестанет работать на всех устройствах</span>
+            </div>
+
+            <button type="button" class="btn btn-danger-solid" id="confirmRevokeBtn" disabled onclick="executeRevokeAll()">Все равно сбросить</button>
+        </div>
+    </div>
+
     <!-- МОДАЛЬНОЕ ОКНО ВЫБОРА СПОСОБА ОПЛАТЫ -->
     <div id="paymentMethodModal" class="modal-overlay" onclick="closeModal(event)">
         <div class="modal-content" onclick="event.stopPropagation()">
@@ -473,6 +493,13 @@
                 </div>
                 <span style="font-size: 14px; font-weight: 600;">Автопродление</span>
             </div>
+
+            <!-- Поле промокода на оплату -->
+            <div style="margin-bottom: 16px; display: flex; gap: 8px;">
+                <input type="text" class="modal-input" placeholder="Промокод на скидку" id="paymentPromoInput" style="margin: 0; font-size: 14px; padding: 12px; text-transform: uppercase;">
+                <button type="button" class="btn btn-outline" style="width: 110px; padding: 12px; font-size: 13px;" onclick="applyPaymentPromo()">Применить</button>
+            </div>
+            <div id="promoDiscountLabel" style="font-size: 13px; color: var(--success); margin-bottom: 12px; display: none;"></div>
 
             <button type="button" class="btn btn-primary" onclick="executeFinalPayment()" id="finalPayBtn">Оплатить через CryptoBot</button>
             
@@ -511,9 +538,7 @@
 
     <!-- ОКНО: Где настраиваем? (setup-device) -->
     <div id="view-setup-device" class="view-container">
-        <div class="header-top">
-            <button class="back-btn" onclick="switchTab('home')"><i data-lucide="chevron-left" style="width: 20px;"></i></button>
-        </div>
+        <div class="header-top"><div class="page-title">Настройка VPN</div></div>
         <div class="setup-screen">
             <div class="setup-icon-box"><i data-lucide="smartphone" style="width: 32px; height: 32px; color: var(--primary);"></i></div>
             <h2 class="setup-title">Где настраиваем?</h2>
@@ -536,9 +561,7 @@
 
     <!-- ОКНО: Выбор приложения (setup-app - Универсальное) -->
     <div id="view-setup-app" class="view-container">
-        <div class="header-top">
-            <button class="back-btn" onclick="switchTab('setup-device')"><i data-lucide="chevron-left" style="width: 20px;"></i></button>
-        </div>
+        <div class="header-top"><div class="page-title">Выбор приложения</div></div>
         <div class="setup-screen">
             <div class="setup-icon-box"><i data-lucide="cloud-download" style="width: 32px; height: 32px; color: var(--primary);"></i></div>
             <h2 class="setup-title">Какое приложение?</h2>
@@ -563,9 +586,7 @@
 
     <!-- ОКНО: Список других устройств (setup-other) -->
     <div id="view-setup-other" class="view-container">
-        <div class="header-top">
-            <button class="back-btn" onclick="switchTab('setup-device')"><i data-lucide="chevron-left" style="width: 20px;"></i></button>
-        </div>
+        <div class="header-top"><div class="page-title">Другие устройства</div></div>
         <div class="setup-screen" style="padding-top: 0; min-height: auto;">
             <div class="setup-icon-box" style="margin-top: 10px;"><i data-lucide="monitor-smartphone" style="width: 32px; height: 32px; color: var(--primary);"></i></div>
             <h2 class="setup-title">На другом устройстве</h2>
@@ -640,7 +661,7 @@
     <!-- ИНДИВИДУАЛЬНЫЕ ОКНА УСТРОЙСТВ -->
     <!-- iOS -->
     <div id="view-setup-ios" class="view-container">
-        <div class="header-top"><button class="back-btn" onclick="switchTab('setup-other')"><i data-lucide="chevron-left" style="width: 20px;"></i></button></div>
+        <div class="header-top"><div class="page-title">Настройка iOS</div></div>
         <div class="setup-screen" style="padding-top:0;">
             <div class="setup-icon-box"><i data-lucide="apple" style="width: 32px; height: 32px; color: var(--primary);"></i></div>
             <h2 class="setup-title" style="margin-bottom: 30px;">Настроить на iOS</h2>
@@ -668,7 +689,7 @@
 
     <!-- Android -->
     <div id="view-setup-android" class="view-container">
-        <div class="header-top"><button class="back-btn" onclick="switchTab('setup-other')"><i data-lucide="chevron-left" style="width: 20px;"></i></button></div>
+        <div class="header-top"><div class="page-title">Настройка Android</div></div>
         <div class="setup-screen" style="padding-top:0;">
             <div class="setup-icon-box"><i data-lucide="play" style="width: 32px; height: 32px; color: var(--primary);"></i></div>
             <h2 class="setup-title" style="margin-bottom: 30px;">Настроить на Android</h2>
@@ -696,7 +717,7 @@
 
     <!-- macOS -->
     <div id="view-setup-macos" class="view-container">
-        <div class="header-top"><button class="back-btn" onclick="switchTab('setup-other')"><i data-lucide="chevron-left" style="width: 20px;"></i></button></div>
+        <div class="header-top"><div class="page-title">Настройка macOS</div></div>
         <div class="setup-screen" style="padding-top:0;">
             <div class="setup-icon-box"><i data-lucide="monitor" style="width: 32px; height: 32px; color: var(--primary);"></i></div>
             <h2 class="setup-title" style="margin-bottom: 30px;">Настроить на macOS</h2>
@@ -724,7 +745,7 @@
 
     <!-- TV -->
     <div id="view-setup-tv" class="view-container">
-        <div class="header-top"><button class="back-btn" onclick="switchTab('setup-other')"><i data-lucide="chevron-left" style="width: 20px;"></i></button></div>
+        <div class="header-top"><div class="page-title">Настройка TV</div></div>
         <div class="setup-screen" style="padding-top:0;">
             <div class="setup-icon-box"><i data-lucide="tv" style="width: 32px; height: 32px; color: var(--primary);"></i></div>
             <h2 class="setup-title" style="margin-bottom: 30px;">Настроить на TV</h2>
@@ -752,7 +773,7 @@
 
     <!-- Windows -->
     <div id="view-setup-windows" class="view-container">
-        <div class="header-top"><button class="back-btn" onclick="switchTab('setup-other')"><i data-lucide="chevron-left" style="width: 20px;"></i></button></div>
+        <div class="header-top"><div class="page-title">Настройка Windows</div></div>
         <div class="setup-screen" style="padding-top:0;">
             <div class="setup-icon-box"><i data-lucide="layout-dashboard" style="width: 32px; height: 32px; color: var(--primary);"></i></div>
             <h2 class="setup-title" style="margin-bottom: 30px;">Настроить на Windows</h2>
@@ -780,7 +801,7 @@
 
     <!-- Linux -->
     <div id="view-setup-linux" class="view-container">
-        <div class="header-top"><button class="back-btn" onclick="switchTab('setup-other')"><i data-lucide="chevron-left" style="width: 20px;"></i></button></div>
+        <div class="header-top"><div class="page-title">Настройка Linux</div></div>
         <div class="setup-screen" style="padding-top:0;">
             <div class="setup-icon-box"><i data-lucide="terminal" style="width: 32px; height: 32px; color: var(--primary);"></i></div>
             <h2 class="setup-title" style="margin-bottom: 30px;">Настроить на Linux</h2>
@@ -808,7 +829,7 @@
 
     <!-- Chrome -->
     <div id="view-setup-chrome" class="view-container">
-        <div class="header-top"><button class="back-btn" onclick="switchTab('setup-other')"><i data-lucide="chevron-left" style="width: 20px;"></i></button></div>
+        <div class="header-top"><div class="page-title">Расширение Chrome</div></div>
         <div class="setup-screen" style="padding-top:0;">
             <div class="setup-icon-box"><i data-lucide="chrome" style="width: 32px; height: 32px; color: var(--primary);"></i></div>
             <h2 class="setup-title" style="margin-bottom: 30px;">Настроить в Chrome</h2>
@@ -836,9 +857,7 @@
 
     <!-- ОКНО 3: Ваш ключ (setup-key - Для этого устройства) -->
     <div id="view-setup-key" class="view-container">
-        <div class="header-top">
-            <button class="back-btn" onclick="switchTab('setup-app')"><i data-lucide="chevron-left" style="width: 20px;"></i></button>
-        </div>
+        <div class="header-top"><div class="page-title">Ваш ключ</div></div>
         <div class="setup-screen">
             <div class="setup-icon-box"><i data-lucide="link" style="width: 32px; height: 32px; color: var(--primary);"></i></div>
             <h2 class="setup-title">Ваш ключ</h2>
@@ -861,9 +880,7 @@
 
     <!-- ОКНО 4: Готово! (setup-done) -->
     <div id="view-setup-done" class="view-container">
-        <div class="header-top">
-            <button class="back-btn" onclick="switchTab('setup-key')"><i data-lucide="chevron-left" style="width: 20px;"></i></button>
-        </div>
+        <div class="header-top"><div class="page-title">Готово</div></div>
         <div class="setup-screen">
             <div class="setup-icon-box" style="background: rgba(16,185,129,0.15); border-color: rgba(16,185,129,0.3); color: var(--success);"><i data-lucide="check" style="width: 32px; height: 32px;"></i></div>
             <h2 class="setup-title">Готово!</h2>
@@ -888,7 +905,7 @@
 
     <!-- ОСТАЛЬНЫЕ ТАБЫ -->
     <div id="view-payment" class="view-container">
-        <div class="header-top"><button class="back-btn" onclick="switchTab('home')"><i data-lucide="chevron-left" style="width: 20px;"></i></button></div>
+        <div class="header-top"><div class="page-title">Оплата подписки</div></div>
         <div class="payment-header">
             <h2>Интернет на <span class="text-primary">ваших условиях</span></h2>
             <p>Доступ ко всему миру и высокий уровень защиты — в одном тарифе</p>
@@ -929,7 +946,7 @@
     </div>
 
     <div id="view-ref" class="view-container">
-        <div class="header-top"><button class="back-btn" onclick="switchTab('home')"><i data-lucide="chevron-left" style="width: 20px;"></i></button><div class="page-title">Реферальная программа</div></div>
+        <div class="header-top"><div class="page-title">Рефералы</div></div>
         <div class="ref-grid">
             <div class="ref-col-left">
                 <div class="ref-stat-card"><div class="ref-stat-label">Баланс</div><div class="ref-stat-val" id="refBalanceVal">0 ₽</div></div>
@@ -950,7 +967,7 @@
     </div>
 
     <div id="view-support" class="view-container">
-        <div class="header-top"><button class="back-btn" onclick="switchTab('home')"><i data-lucide="chevron-left" style="width: 20px;"></i></button><div class="page-title">Поддержка</div></div>
+        <div class="header-top"><div class="page-title">Поддержка</div></div>
         <div class="faq-list">
             <div class="faq-item" onclick="openModal(1)"><div class="faq-num">1</div><div class="faq-title">VPN не подключается</div><div class="faq-arrow"><i data-lucide="arrow-right" style="width: 18px;"></i></div></div>
             <div class="faq-item" onclick="openModal(2)"><div class="faq-num">2</div><div class="faq-title">Как установить VPN?</div><div class="faq-arrow"><i data-lucide="arrow-right" style="width: 18px;"></i></div></div>
@@ -967,10 +984,7 @@
 
     <!-- НАСТРОЙКИ (Профиль) -->
     <div id="view-settings" class="view-container">
-        <div class="header-top">
-            <button class="back-btn" onclick="switchTab('home')"><i data-lucide="chevron-left" style="width: 20px;"></i></button>
-            <div class="page-title">Профиль</div>
-        </div>
+        <div class="header-top"><div class="page-title">Профиль</div></div>
 
         <div style="text-align: center; margin-bottom: 24px; padding: 24px 20px; background: var(--bg-card); border: 1px solid rgba(255,255,255,0.08); border-radius: var(--radius-xl);">
             <img id="userAvatar" src="" alt="Avatar" style="width: 72px; height: 72px; border-radius: 50%; object-fit: cover; margin: 0 auto 12px; border: 2px solid var(--primary); display: none;">
@@ -980,7 +994,6 @@
             <div id="userLoyaltyBadge" style="display: inline-block; margin-top: 10px; background: var(--primary-transparent); color: var(--primary); font-size: 12px; font-weight: 700; padding: 4px 12px; border-radius: 100px;">Статус: Загрузка...</div>
         </div>
 
-        <!-- РАСШИРЕННЫЕ БЛОКИ ПРОФИЛЯ -->
         <div class="settings-section">
             <div class="settings-section-title">Управление подпиской и оплатой</div>
             <div class="settings-block">
@@ -1040,19 +1053,6 @@
         </div>
 
         <div class="settings-section">
-            <div class="settings-section-title">Безопасность</div>
-            <div class="settings-block">
-                <div class="settings-row" onclick="revokeAllSessions()" style="color: var(--danger);">
-                    <div class="settings-row-left">
-                        <div class="settings-icon" style="background: rgba(239, 68, 68, 0.1); color: var(--danger);"><i data-lucide="shield-alert" style="width: 18px;"></i></div>
-                        <div class="settings-row-title" style="color: var(--danger);">Выйти со всех устройств</div>
-                    </div>
-                    <div class="settings-action"><i data-lucide="arrow-right" style="width: 18px; color: var(--danger);"></i></div>
-                </div>
-            </div>
-        </div>
-
-        <div class="settings-section">
             <div class="settings-section-title">Способы входа</div>
             <div class="settings-block">
                 <div class="settings-row" onclick="openEmailModal()">
@@ -1087,10 +1087,7 @@
 
     <!-- ЭКРАН УВЕДОМЛЕНИЙ -->
     <div id="view-notifications" class="view-container">
-        <div class="header-top">
-            <button class="back-btn" onclick="switchTab('settings')"><i data-lucide="chevron-left" style="width: 20px;"></i></button>
-            <div class="page-title">Уведомления</div>
-        </div>
+        <div class="header-top"><div class="page-title">Уведомления</div></div>
         <div class="settings-block">
             <div class="settings-row">
                 <div class="settings-row-left"><div class="settings-row-title">Окончание подписки</div></div>
@@ -1109,10 +1106,7 @@
 
     <!-- ЭКРАН УСТРОЙСТВ -->
     <div id="view-devices" class="view-container">
-        <div class="header-top">
-            <button class="back-btn" onclick="switchTab('settings')"><i data-lucide="chevron-left" style="width: 20px;"></i></button>
-            <div class="page-title">Устройства</div>
-        </div>
+        <div class="header-top"><div class="page-title">Устройства</div></div>
         
         <div class="device-list-group">
             <div class="device-list-title">Текущее устройство</div>
@@ -1137,14 +1131,25 @@
         <button class="btn btn-outline" style="margin-top: 24px;" onclick="switchTab('setup-device')">
             <i data-lucide="plus" style="width: 20px;"></i> Подключить новое устройство
         </button>
+
+        <!-- БЛОК БЕЗОПАСНОСТИ (Выйти со всех устройств) -->
+        <div class="settings-section" style="margin-top: 28px;">
+            <div class="settings-section-title">Безопасность</div>
+            <div class="settings-block">
+                <div class="settings-row" onclick="openRevokeModal()" style="color: var(--danger);">
+                    <div class="settings-row-left">
+                        <div class="settings-icon" style="background: rgba(239, 68, 68, 0.1); color: var(--danger);"><i data-lucide="shield-alert" style="width: 18px;"></i></div>
+                        <div class="settings-row-title" style="color: var(--danger);">Выйти со всех устройств</div>
+                    </div>
+                    <div class="settings-action"><i data-lucide="arrow-right" style="width: 18px; color: var(--danger);"></i></div>
+                </div>
+            </div>
+        </div>
     </div>
 
     <!-- ДОКУМЕНТЫ -->
     <div id="view-documents" class="view-container">
-        <div class="header-top">
-            <button class="back-btn" onclick="closeDocuments()"><i data-lucide="chevron-left" style="width: 20px;"></i></button>
-            <div class="page-title">Документы</div>
-        </div>
+        <div class="header-top"><div class="page-title">Документы</div></div>
         <div class="doc-card">
             <div class="doc-section">
                 <div class="doc-title">Политика конфиденциальности</div>
@@ -1378,20 +1383,20 @@
                         badge.innerHTML = `<i data-lucide="info" style="width: 14px; height: 14px; fill: var(--danger); color: var(--bg-base);"></i>Подписка закончилась`;
                     }
                     
-                    // Статус лояльности
                     if (data.loyalty_status) {
                         document.getElementById('userLoyaltyBadge').innerText = `Статус: ${data.loyalty_status}`;
                     }
 
-                    // Карты
                     const cardSubtitle = document.getElementById('cardInfoSubtitle');
                     const cardBtn = document.getElementById('cardActionBtn');
-                    if (data.subscription && data.subscription.card_last4) {
-                        cardSubtitle.innerText = `•••• •••• •••• ${data.subscription.card_last4}`;
-                        cardBtn.style.display = 'block';
-                    } else {
-                        cardSubtitle.innerText = 'Нет привязанных карт';
-                        cardBtn.style.display = 'none';
+                    if (cardSubtitle && cardBtn) {
+                        if (data.subscription && data.subscription.card_last4) {
+                            cardSubtitle.innerText = `•••• •••• •••• ${data.subscription.card_last4}`;
+                            cardBtn.style.display = 'block';
+                        } else {
+                            cardSubtitle.innerText = 'Нет привязанных карт';
+                            cardBtn.style.display = 'none';
+                        }
                     }
 
                     lucide.createIcons();
@@ -1401,7 +1406,57 @@
             }
         }
 
-        // Функции для новых фич профиля
+        // Логика чекбокса и модального окна сброса устройств
+        let isRevokeChecked = false;
+
+        function openRevokeModal() {
+            if(tg?.HapticFeedback) tg.HapticFeedback.impactOccurred('light');
+            isRevokeChecked = false;
+            document.getElementById('revokeCheckbox').style.borderColor = 'var(--primary)';
+            document.getElementById('revokeCheckbox').style.background = 'transparent';
+            document.getElementById('revokeCheckIcon').style.display = 'none';
+            document.getElementById('confirmRevokeBtn').disabled = true;
+            document.getElementById('revokeModal').classList.add('show');
+        }
+
+        function toggleRevokeCheckbox() {
+            if(tg?.HapticFeedback) tg.HapticFeedback.impactOccurred('light');
+            isRevokeChecked = !isRevokeChecked;
+            const cb = document.getElementById('revokeCheckbox');
+            const icon = document.getElementById('revokeCheckIcon');
+            const btn = document.getElementById('confirmRevokeBtn');
+
+            if (isRevokeChecked) {
+                cb.style.background = 'var(--primary)';
+                cb.style.borderColor = 'var(--primary)';
+                icon.style.display = 'block';
+                btn.disabled = false;
+            } else {
+                cb.style.background = 'transparent';
+                cb.style.borderColor = 'var(--primary)';
+                icon.style.display = 'none';
+                btn.disabled = true;
+            }
+        }
+
+        async function executeRevokeAll() {
+            if (!isRevokeChecked) return;
+            if(tg?.HapticFeedback) tg.HapticFeedback.impactOccurred('heavy');
+            try {
+                const response = await fetch(`${API_URL}/revoke-all-devices/${globalTgId}`, { method: "POST" });
+                const result = await response.json();
+                if (response.ok && result.success) {
+                    showToast("Все устройства и сессии сброшены!");
+                    closeModal();
+                    loadUserDevices(globalTgId);
+                } else {
+                    showToast("Не удалось выполнить сброс");
+                }
+            } catch (e) {
+                showToast("Ошибка сети");
+            }
+        }
+
         async function openHistoryModal() {
             if(tg?.HapticFeedback) tg.HapticFeedback.impactOccurred('light');
             document.getElementById('historyModal').classList.add('show');
@@ -1486,24 +1541,6 @@
             }
         }
 
-        async function revokeAllSessions() {
-            if(tg?.HapticFeedback) tg.HapticFeedback.impactOccurred('heavy');
-            if (confirm("Вы уверены? Все активные ключи и устройства будут сброшены!")) {
-                try {
-                    const response = await fetch(`${API_URL}/revoke-all-devices/${globalTgId}`, { method: "POST" });
-                    const result = await response.json();
-                    if (response.ok && result.success) {
-                        showToast("Все сессии и устройства успешно сброшены");
-                        loadUserDevices(globalTgId);
-                    } else {
-                        showToast("Не удалось выполнить сброс");
-                    }
-                } catch (e) {
-                    showToast("Ошибка сети");
-                }
-            }
-        }
-
         const tg = window.Telegram?.WebApp;
         if(tg) {
             tg.ready();
@@ -1517,6 +1554,44 @@
         let selectedPaymentMethod = 'crypto';
         let autoRenewalEnabled = true;
         let documentReturnView = 'settings';
+        let appliedPromoCode = "";
+        let promoDiscountPercent = 0;
+
+        async function applyPaymentPromo() {
+            const codeInput = document.getElementById('paymentPromoInput').value.trim();
+            if (!codeInput) {
+                showToast("Введите промокод");
+                return;
+            }
+            if(tg?.HapticFeedback) tg.HapticFeedback.impactOccurred('medium');
+            try {
+                const response = await fetch(`${API_URL}/check-promo`, {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ code: codeInput })
+                });
+                const result = await response.json();
+                if (response.ok && result.success) {
+                    if (result.discount_percent > 0) {
+                        promoDiscountPercent = result.discount_percent;
+                        appliedPromoCode = codeInput.toUpperCase();
+                        showToast(`Промокод активирован! Скидка ${promoDiscountPercent}%`);
+                        
+                        const label = document.getElementById('promoDiscountLabel');
+                        label.style.display = 'block';
+                        label.innerText = `Применена скидка: ${promoDiscountPercent}%`;
+                        
+                        updatePaymentSummary();
+                    } else {
+                        showToast("Этот промокод предназначен для активации бонусных дней в профиле");
+                    }
+                } else {
+                    showToast("Промокод не найден");
+                }
+            } catch (e) {
+                showToast("Ошибка проверки промокода");
+            }
+        }
 
         function openDocuments(returnTo) {
             documentReturnView = returnTo;
@@ -1561,6 +1636,9 @@
             let extraPerDay = extraCostTotal > 0 ? (extraCostTotal / (currentTariff * 30)).toFixed(2).replace('.', ',') : '0,00';
             
             let totalPrice = basePrice + extraCostTotal;
+            if (promoDiscountPercent > 0) {
+                totalPrice = Math.round(totalPrice * (1 - promoDiscountPercent / 100));
+            }
             
             document.getElementById('summaryMonths').innerText = currentTariff + (currentTariff === 1 ? ' месяц' : ' месяцев');
             document.getElementById('summaryPerDay').innerText = basePerDay + ' ₽ / день';
@@ -1640,7 +1718,8 @@
                             tg_id: userId, 
                             amount: parseFloat(total) / 90, 
                             description: `Подписка на ${currentTariff} мес. (${devicesCount} устр.)`,
-                            auto_renewal: autoRenewalEnabled
+                            auto_renewal: autoRenewalEnabled,
+                            promo_code: appliedPromoCode
                         })
                     });
                     const result = await response.json();
@@ -1679,7 +1758,8 @@
                             tg_id: userId, 
                             amount: parseFloat(total), 
                             description: `Подписка на ${currentTariff} мес. (${devicesCount} устр.) через СБП`,
-                            auto_renewal: autoRenewalEnabled
+                            auto_renewal: autoRenewalEnabled,
+                            promo_code: appliedPromoCode
                         })
                     });
                     const result = await response.json();

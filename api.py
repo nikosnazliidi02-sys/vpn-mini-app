@@ -69,7 +69,7 @@ def init_db():
         cursor.execute("""
             CREATE TABLE IF NOT EXISTS promocodes (
                 code TEXT PRIMARY KEY,
-                discount_percent INTEGER,
+                discount_percent INTEGER DEFAULT 0,
                 bonus_days INTEGER DEFAULT 0
             )
         """)
@@ -105,8 +105,6 @@ init_db()
 def get_user_profile(tg_id: str):
     with sqlite3.connect("vpn_users.db") as conn:
         cursor = conn.cursor()
-        
-        # Регистрируем пользователя, если его нет, для расчета стажа
         now_str = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
         cursor.execute("INSERT OR IGNORE INTO users (tg_id, joined_at) VALUES (?, ?)", (tg_id, now_str))
         conn.commit()
@@ -185,12 +183,19 @@ def activate_promo(req: PromoActivateRequest):
     code = req.code.strip().upper()
     with sqlite3.connect("vpn_users.db") as conn:
         cursor = conn.cursor()
-        cursor.execute("SELECT bonus_days FROM promocodes WHERE code = ?", (code,))
+        cursor.execute("SELECT discount_percent, bonus_days FROM promocodes WHERE code = ?", (code,))
         promo = cursor.fetchone()
         if not promo:
             raise HTTPException(status_code=400, detail="Промокод не найден или недействителен")
         
-        bonus_days = promo[0] if promo[0] > 0 else 3  # по умолчанию дадим 3 дня если не задано
+        discount_percent = promo[0] if promo[0] is not None else 0
+        bonus_days = promo[1] if promo[1] is not None else 0
+        
+        if discount_percent > 0 and bonus_days == 0:
+            raise HTTPException(status_code=400, detail="Этот промокод дает скидку при оплате, введите его в окне оплаты")
+        
+        if bonus_days <= 0:
+            raise HTTPException(status_code=400, detail="Этот промокод не содержит бонусных дней")
         
         cursor.execute("SELECT expires_at, status FROM subscriptions WHERE tg_id = ?", (req.tg_id,))
         sub = cursor.fetchone()
@@ -214,6 +219,20 @@ def activate_promo(req: PromoActivateRequest):
                        (req.tg_id, f"Активация промокода: {code} (+{bonus_days} дн.)", datetime.now().strftime("%Y-%m-%d %H:%M")))
         conn.commit()
     return {"success": True, "message": f"Промокод успешно активирован! Добавлено дней: {bonus_days}"}
+
+class CheckPromoRequest(BaseModel):
+    code: str
+
+@app.post("/check-promo")
+def check_promo(req: CheckPromoRequest):
+    code = req.code.strip().upper()
+    with sqlite3.connect("vpn_users.db") as conn:
+        cursor = conn.cursor()
+        cursor.execute("SELECT discount_percent, bonus_days FROM promocodes WHERE code = ?", (code,))
+        row = cursor.fetchone()
+        if not row:
+            raise HTTPException(status_code=400, detail="Промокод не найден")
+    return {"success": True, "discount_percent": row[0], "bonus_days": row[1]}
 
 @app.post("/unlink-card/{tg_id}")
 def unlink_card(tg_id: str):
@@ -329,12 +348,22 @@ class YooKassaRequest(BaseModel):
     amount: float
     description: str
     auto_renewal: bool = False
+    promo_code: str = None
 
 @app.post("/create-yookassa-invoice")
 async def create_yookassa_invoice(req: YooKassaRequest):
+    final_amount = req.amount
+    if req.promo_code:
+        with sqlite3.connect("vpn_users.db") as conn:
+            cursor = conn.cursor()
+            cursor.execute("SELECT discount_percent FROM promocodes WHERE code = ?", (req.promo_code.strip().upper(),))
+            row = cursor.fetchone()
+            if row and row[0] > 0:
+                final_amount = req.amount * (1 - row[0] / 100)
+
     url = "https://api.yookassa.ru/v3/payments"
     payload = {
-        "amount": {"value": f"{req.amount:.2f}", "currency": "RUB"},
+        "amount": {"value": f"{final_amount:.2f}", "currency": "RUB"},
         "capture": True,
         "confirmation": {"type": "redirect", "return_url": "https://t.me/afroslavyanVPN_bot"},
         "description": req.description,
@@ -357,7 +386,7 @@ async def create_yookassa_invoice(req: YooKassaRequest):
                 with sqlite3.connect("vpn_users.db") as conn:
                     cursor = conn.cursor()
                     cursor.execute("INSERT INTO transactions (tg_id, amount, description, date) VALUES (?, ?, ?, ?)", 
-                                   (req.tg_id, req.amount, req.description, datetime.now().strftime("%Y-%m-%d %H:%M")))
+                                   (req.tg_id, final_amount, req.description, datetime.now().strftime("%Y-%m-%d %H:%M")))
                     new_exp = (datetime.now() + timedelta(days=30)).strftime("%Y-%m-%d %H:%M:%S")
                     cursor.execute("""
                         INSERT INTO subscriptions (tg_id, expires_at, status, auto_renewal, card_last4) VALUES (?, ?, 'active', ?, '4242')
@@ -375,13 +404,23 @@ class CryptoRequest(BaseModel):
     amount: float
     description: str
     auto_renewal: bool = False
+    promo_code: str = None
 
 @app.post("/create-crypto-invoice")
 async def create_crypto_invoice(req: CryptoRequest):
+    final_amount = req.amount
+    if req.promo_code:
+        with sqlite3.connect("vpn_users.db") as conn:
+            cursor = conn.cursor()
+            cursor.execute("SELECT discount_percent FROM promocodes WHERE code = ?", (req.promo_code.strip().upper(),))
+            row = cursor.fetchone()
+            if row and row[0] > 0:
+                final_amount = req.amount * (1 - row[0] / 100)
+
     with sqlite3.connect("vpn_users.db") as conn:
         cursor = conn.cursor()
         cursor.execute("INSERT INTO transactions (tg_id, amount, description, date) VALUES (?, ?, ?, ?)", 
-                       (req.tg_id, req.amount, req.description, datetime.now().strftime("%Y-%m-%d %H:%M")))
+                       (req.tg_id, final_amount, req.description, datetime.now().strftime("%Y-%m-%d %H:%M")))
         new_exp = (datetime.now() + timedelta(days=30)).strftime("%Y-%m-%d %H:%M:%S")
         cursor.execute("""
             INSERT INTO subscriptions (tg_id, expires_at, status) VALUES (?, ?, 'active')
@@ -500,8 +539,8 @@ def admin_withdrawal_action(req: WithdrawalAction):
 
 class AdminPromoCreate(BaseModel):
     code: str
-    discount_percent: int
-    bonus_days: int = 3
+    discount_percent: int = 0
+    bonus_days: int = 0
 
 @app.post("/admin/create-promo")
 def admin_create_promo(req: AdminPromoCreate):

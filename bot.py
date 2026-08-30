@@ -188,7 +188,14 @@ def handle_query(call):
 
     elif call.data == "admin_promo_prompt":
         if str(call.from_user.id) != ADMIN_ID: return
-        msg = bot.send_message(call.message.chat.id, "Введите промокод и скидку в формате:\n`КОД СКИДКА%`\n(Например: `SALE20 20`)", parse_mode="Markdown")
+        msg = bot.send_message(
+            call.message.chat.id, 
+            "🎟 <b>Создание промокода:</b>\n\n"
+            "Отправьте данные в одном из форматов:\n"
+            "• <b>Для дней подписки:</b> <code>КОД ДНИ</code> (например: <code>FREE3 3</code> или <code>MONTH30 30</code>)\n"
+            "• <b>Для скидки в %:</b> <code>КОД СКИДКА%</code> (например: <code>SALE20 20%</code>)", 
+            parse_mode="HTML"
+        )
         bot.register_next_step_handler(msg, process_create_promo)
 
     elif call.data == "broadcast_news":
@@ -212,19 +219,32 @@ def process_create_promo(message):
     if str(message.from_user.id) != ADMIN_ID: return
     parts = message.text.split()
     if len(parts) != 2:
-        bot.send_message(message.chat.id, "Неверный формат. Попробуйте снова через админ-панель.")
+        bot.send_message(message.chat.id, "⚠️ Неверный формат. Используйте: <code>КОД ДНИ</code> или <code>КОД СКИДКА%</code>", parse_mode="HTML")
         return
     
     code = parts[0]
+    val_str = parts[1]
     try:
-        discount = int(parts[1].replace('%', ''))
-        r = httpx.post(f"{API_URL}/admin/create-promo", json={"code": code, "discount_percent": discount}, timeout=10.0)
+        if '%' in val_str:
+            discount = int(val_str.replace('%', ''))
+            days = 0
+            msg_desc = f"скидку {discount}%"
+        else:
+            days = int(val_str)
+            discount = 0
+            msg_desc = f"{days} дн. подписки"
+
+        r = httpx.post(
+            f"{API_URL}/admin/create-promo", 
+            json={"code": code, "discount_percent": discount, "bonus_days": days}, 
+            timeout=10.0
+        )
         if r.json().get("success"):
-            bot.send_message(message.chat.id, f"✅ Промокод <b>{code.upper()}</b> на <b>{discount}%</b> успешно добавлен!")
+            bot.send_message(message.chat.id, f"✅ Промокод <b>{code.upper()}</b> на <b>{msg_desc}</b> успешно создан!")
         else:
             bot.send_message(message.chat.id, "Ошибка создания промокода на сервере.")
     except ValueError:
-        bot.send_message(message.chat.id, "Скидка должна быть числом.")
+        bot.send_message(message.chat.id, "⚠️ Числовое значение указано неверно.")
     except Exception as e:
         logging.error(f"Ошибка запроса промокода: {e}")
         bot.send_message(message.chat.id, "Ошибка соединения с сервером.")
