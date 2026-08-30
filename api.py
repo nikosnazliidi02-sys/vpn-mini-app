@@ -20,7 +20,7 @@ app.add_middleware(
 
 YOOKASSA_SHOP_ID = "1444358"
 YOOKASSA_SECRET_KEY = "live_7YgYIW8xKJsRDfqlSt2P-fqubRhw4Fs8eUr-R5wJYq4"
-CRYPTO_BOT_TOKEN = "628351:AAxhHcnYiItWxMgeFGQqqs1aiqUjEdJ8F59"
+CRYPTO_BOT_TOKEN = "628356:AAJb1KHh9Sx0Ibr8AI0pSctIfSScInHkDcL"
 
 def init_db():
     with sqlite3.connect("vpn_users.db") as conn:
@@ -421,7 +421,8 @@ async def create_crypto_invoice(req: CryptoRequest):
     url = "https://pay.crypt.bot/api/createInvoice"
     headers = {"Crypto-Pay-API-Token": CRYPTO_BOT_TOKEN, "Content-Type": "application/json"}
     payload = {
-        "asset": "RUB",
+        "currency_type": "fiat",
+        "fiat": "RUB",
         "amount": f"{final_amount:.2f}",
         "description": req.description,
         "payload": f"tg_id:{req.tg_id}",
