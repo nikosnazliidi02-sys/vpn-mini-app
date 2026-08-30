@@ -227,7 +227,7 @@ def process_create_promo(message):
     
     code = parts[0]
     val_str = parts[1]
-    max_uses = int(parts[2]) if len(parts) > 2 else 0
+    max_uses = int(parts[2]) if len(parts) > 2 and parts[2].isdigit() else 0
     
     try:
         if '%' in val_str:

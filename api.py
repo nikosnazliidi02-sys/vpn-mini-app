@@ -77,6 +77,13 @@ def init_db():
             )
         """)
         cursor.execute("""
+            CREATE TABLE IF NOT EXISTS user_promo_activations (
+                tg_id TEXT,
+                code TEXT,
+                PRIMARY KEY (tg_id, code)
+            )
+        """)
+        cursor.execute("""
             CREATE TABLE IF NOT EXISTS email_verifications (
                 tg_id TEXT PRIMARY KEY,
                 email TEXT,
@@ -186,6 +193,11 @@ def activate_promo(req: PromoActivateRequest):
     code = req.code.strip().upper()
     with sqlite3.connect("vpn_users.db") as conn:
         cursor = conn.cursor()
+        
+        cursor.execute("SELECT 1 FROM user_promo_activations WHERE tg_id = ? AND code = ?", (req.tg_id, code))
+        if cursor.fetchone():
+            raise HTTPException(status_code=400, detail="Вы уже использовали этот промокод ранее")
+
         cursor.execute("SELECT discount_percent, bonus_days, max_uses, current_uses FROM promocodes WHERE code = ?", (code,))
         promo = cursor.fetchone()
         if not promo:
@@ -221,6 +233,7 @@ def activate_promo(req: PromoActivateRequest):
         """, (req.tg_id, new_exp, new_exp))
         
         cursor.execute("UPDATE promocodes SET current_uses = current_uses + 1 WHERE code = ?", (code,))
+        cursor.execute("INSERT INTO user_promo_activations (tg_id, code) VALUES (?, ?)", (req.tg_id, code))
         
         cursor.execute("INSERT INTO transactions (tg_id, amount, description, date) VALUES (?, 0, ?, ?)",
                        (req.tg_id, f"Активация промокода: {code} (+{bonus_days} дн.)", datetime.now().strftime("%Y-%m-%d %H:%M")))
@@ -601,8 +614,12 @@ def admin_create_promo(req: AdminPromoCreate):
     with sqlite3.connect("vpn_users.db") as conn:
         cursor = conn.cursor()
         cursor.execute("""
-            INSERT OR REPLACE INTO promocodes (code, discount_percent, bonus_days, max_uses, current_uses) 
+            INSERT INTO promocodes (code, discount_percent, bonus_days, max_uses, current_uses) 
             VALUES (?, ?, ?, ?, 0)
+            ON CONFLICT(code) DO UPDATE SET 
+                discount_percent = excluded.discount_percent,
+                bonus_days = excluded.bonus_days,
+                max_uses = excluded.max_uses
         """, (req.code.strip().upper(), req.discount_percent, req.bonus_days, req.max_uses))
         conn.commit()
     return {"success": True, "message": "Промокод успешно создан"}
