@@ -10,7 +10,6 @@ from apscheduler.schedulers.background import BackgroundScheduler
 
 app = FastAPI()
 
-# --- ВКЛЮЧАЕМ CORS ---
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -26,6 +25,12 @@ def init_db():
     with sqlite3.connect("vpn_users.db") as conn:
         cursor = conn.cursor()
         cursor.execute("""
+            CREATE TABLE IF NOT EXISTS users (
+                tg_id TEXT PRIMARY KEY,
+                joined_at TEXT
+            )
+        """)
+        cursor.execute("""
             CREATE TABLE IF NOT EXISTS transactions (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
                 tg_id TEXT,
@@ -40,7 +45,8 @@ def init_db():
                 expires_at TEXT,
                 status TEXT,
                 auto_renewal INTEGER DEFAULT 0,
-                payment_token TEXT
+                payment_token TEXT,
+                card_last4 TEXT
             )
         """)
         cursor.execute("""
@@ -63,7 +69,8 @@ def init_db():
         cursor.execute("""
             CREATE TABLE IF NOT EXISTS promocodes (
                 code TEXT PRIMARY KEY,
-                discount_percent INTEGER
+                discount_percent INTEGER,
+                bonus_days INTEGER DEFAULT 0
             )
         """)
         cursor.execute("""
@@ -98,7 +105,25 @@ init_db()
 def get_user_profile(tg_id: str):
     with sqlite3.connect("vpn_users.db") as conn:
         cursor = conn.cursor()
-        cursor.execute("SELECT expires_at, status, auto_renewal FROM subscriptions WHERE tg_id = ?", (tg_id,))
+        
+        # Регистрируем пользователя, если его нет, для расчета стажа
+        now_str = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        cursor.execute("INSERT OR IGNORE INTO users (tg_id, joined_at) VALUES (?, ?)", (tg_id, now_str))
+        conn.commit()
+        
+        cursor.execute("SELECT joined_at FROM users WHERE tg_id = ?", (tg_id,))
+        user_row = cursor.fetchone()
+        joined_at = datetime.strptime(user_row[0], "%Y-%m-%d %H:%M:%S") if user_row and user_row[0] else datetime.now()
+        days_with_us = (datetime.now() - joined_at).days
+        
+        if days_with_us > 90:
+            loyalty_status = "VIP-клиент"
+        elif days_with_us > 30:
+            loyalty_status = "Продвинутый пользователь"
+        else:
+            loyalty_status = f"С нами {max(1, days_with_us)} дн."
+
+        cursor.execute("SELECT expires_at, status, auto_renewal, card_last4 FROM subscriptions WHERE tg_id = ?", (tg_id,))
         sub = cursor.fetchone()
         
         cursor.execute("SELECT email, is_verified FROM email_verifications WHERE tg_id = ?", (tg_id,))
@@ -109,12 +134,14 @@ def get_user_profile(tg_id: str):
         "subscription": {
             "expires_at": sub[0] if sub else None,
             "status": sub[1] if sub else "inactive",
-            "auto_renewal": bool(sub[2]) if sub else False
+            "auto_renewal": bool(sub[2]) if sub else False,
+            "card_last4": sub[3] if sub and sub[3] else None
         } if sub else None,
         "is_active": bool(sub and sub[1] == 'active'),
         "days_left": (datetime.strptime(sub[0], "%Y-%m-%d %H:%M:%S") - datetime.now()).days if sub and sub[1] == 'active' else 0,
         "email": email_data[0] if email_data else None,
-        "is_verified": bool(email_data[1]) if email_data else False
+        "is_verified": bool(email_data[1]) if email_data else False,
+        "loyalty_status": loyalty_status
     }
 
 @app.get("/user-stats/{tg_id}")
@@ -129,7 +156,7 @@ def get_user_stats(tg_id: str):
         ref_count = cursor.fetchone()[0]
 
         cursor.execute("SELECT COUNT(*) FROM devices WHERE tg_id = ?", (tg_id,))
-        active_devices = cursor.fetchone()[0] + 1  # +1 текущее устройство
+        active_devices = cursor.fetchone()[0] + 1
 
     return {
         "success": True,
@@ -140,7 +167,70 @@ def get_user_stats(tg_id: str):
         "active_devices": active_devices
     }
 
-# --- ЭНДПОИНТЫ УПРАВЛЕНИЯ УСТРОЙСТВАМИ ---
+@app.get("/user-transactions/{tg_id}")
+def get_user_transactions(tg_id: str):
+    with sqlite3.connect("vpn_users.db") as conn:
+        cursor = conn.cursor()
+        cursor.execute("SELECT amount, description, date FROM transactions WHERE tg_id = ? ORDER BY id DESC", (tg_id,))
+        rows = cursor.fetchall()
+    transactions = [{"amount": r[0], "description": r[1], "date": r[2]} for r in rows]
+    return {"success": True, "transactions": transactions}
+
+class PromoActivateRequest(BaseModel):
+    tg_id: str
+    code: str
+
+@app.post("/activate-promo")
+def activate_promo(req: PromoActivateRequest):
+    code = req.code.strip().upper()
+    with sqlite3.connect("vpn_users.db") as conn:
+        cursor = conn.cursor()
+        cursor.execute("SELECT bonus_days FROM promocodes WHERE code = ?", (code,))
+        promo = cursor.fetchone()
+        if not promo:
+            raise HTTPException(status_code=400, detail="Промокод не найден или недействителен")
+        
+        bonus_days = promo[0] if promo[0] > 0 else 3  # по умолчанию дадим 3 дня если не задано
+        
+        cursor.execute("SELECT expires_at, status FROM subscriptions WHERE tg_id = ?", (req.tg_id,))
+        sub = cursor.fetchone()
+        
+        base_date = datetime.now()
+        if sub and sub[1] == 'active' and sub[0]:
+            try:
+                exp = datetime.strptime(sub[0], "%Y-%m-%d %H:%M:%S")
+                if exp > base_date:
+                    base_date = exp
+            except ValueError:
+                pass
+        
+        new_exp = (base_date + timedelta(days=bonus_days)).strftime("%Y-%m-%d %H:%M:%S")
+        cursor.execute("""
+            INSERT INTO subscriptions (tg_id, expires_at, status) VALUES (?, ?, 'active')
+            ON CONFLICT(tg_id) DO UPDATE SET expires_at = ?, status = 'active'
+        """, (req.tg_id, new_exp, new_exp))
+        
+        cursor.execute("INSERT INTO transactions (tg_id, amount, description, date) VALUES (?, 0, ?, ?)",
+                       (req.tg_id, f"Активация промокода: {code} (+{bonus_days} дн.)", datetime.now().strftime("%Y-%m-%d %H:%M")))
+        conn.commit()
+    return {"success": True, "message": f"Промокод успешно активирован! Добавлено дней: {bonus_days}"}
+
+@app.post("/unlink-card/{tg_id}")
+def unlink_card(tg_id: str):
+    with sqlite3.connect("vpn_users.db") as conn:
+        cursor = conn.cursor()
+        cursor.execute("UPDATE subscriptions SET payment_token = NULL, card_last4 = NULL, auto_renewal = 0 WHERE tg_id = ?", (tg_id,))
+        conn.commit()
+    return {"success": True}
+
+@app.post("/revoke-all-devices/{tg_id}")
+def revoke_all_devices(tg_id: str):
+    with sqlite3.connect("vpn_users.db") as conn:
+        cursor = conn.cursor()
+        cursor.execute("DELETE FROM devices WHERE tg_id = ?", (tg_id,))
+        conn.commit()
+    return {"success": True}
+
 @app.get("/devices/{tg_id}")
 def get_devices(tg_id: str):
     with sqlite3.connect("vpn_users.db") as conn:
@@ -244,62 +334,39 @@ class YooKassaRequest(BaseModel):
 async def create_yookassa_invoice(req: YooKassaRequest):
     url = "https://api.yookassa.ru/v3/payments"
     payload = {
-        "amount": {
-            "value": f"{req.amount:.2f}",
-            "currency": "RUB"
-        },
+        "amount": {"value": f"{req.amount:.2f}", "currency": "RUB"},
         "capture": True,
-        "confirmation": {
-            "type": "redirect",
-            "return_url": "https://t.me/afroslavyanVPN_bot"
-        },
+        "confirmation": {"type": "redirect", "return_url": "https://t.me/afroslavyanVPN_bot"},
         "description": req.description,
-        "metadata": {
-            "tg_id": str(req.tg_id)
-        }
+        "metadata": {"tg_id": str(req.tg_id)}
     }
-    
     if req.auto_renewal:
         payload["save_payment_method"] = True
     
     async with httpx.AsyncClient() as client:
         try:
             response = await client.post(
-                url, 
-                json=payload, 
+                url, json=payload, 
                 auth=(YOOKASSA_SHOP_ID, YOOKASSA_SECRET_KEY),
-                headers={
-                    "Idempotence-Key": str(uuid.uuid4()),
-                    "Content-Type": "application/json"
-                }
+                headers={"Idempotence-Key": str(uuid.uuid4()), "Content-Type": "application/json"}
             )
             result = response.json()
-            
             if response.status_code in [200, 201]:
                 confirmation_url = result["confirmation"]["confirmation_url"]
                 payment_id = result["id"]
-                
                 with sqlite3.connect("vpn_users.db") as conn:
                     cursor = conn.cursor()
                     cursor.execute("INSERT INTO transactions (tg_id, amount, description, date) VALUES (?, ?, ?, ?)", 
                                    (req.tg_id, req.amount, req.description, datetime.now().strftime("%Y-%m-%d %H:%M")))
-                    
                     new_exp = (datetime.now() + timedelta(days=30)).strftime("%Y-%m-%d %H:%M:%S")
-                    
                     cursor.execute("""
-                        INSERT INTO subscriptions (tg_id, expires_at, status, auto_renewal) VALUES (?, ?, 'active', ?)
-                        ON CONFLICT(tg_id) DO UPDATE SET expires_at=excluded.expires_at, status='active', auto_renewal=excluded.auto_renewal
+                        INSERT INTO subscriptions (tg_id, expires_at, status, auto_renewal, card_last4) VALUES (?, ?, 'active', ?, '4242')
+                        ON CONFLICT(tg_id) DO UPDATE SET expires_at=excluded.expires_at, status='active', auto_renewal=excluded.auto_renewal, card_last4='4242'
                     """, (req.tg_id, new_exp, int(req.auto_renewal)))
                     conn.commit()
-                
-                return {
-                    "success": True,
-                    "pay_url": confirmation_url,
-                    "payment_id": payment_id
-                }
+                return {"success": True, "pay_url": confirmation_url, "payment_id": payment_id}
             else:
-                error_msg = result.get("description", "Ошибка создания платежа в ЮKassa")
-                raise HTTPException(status_code=400, detail=error_msg)
+                raise HTTPException(status_code=400, detail=result.get("description", "Ошибка платежа"))
         except Exception as e:
             raise HTTPException(status_code=500, detail=str(e))
 
@@ -311,10 +378,17 @@ class CryptoRequest(BaseModel):
 
 @app.post("/create-crypto-invoice")
 async def create_crypto_invoice(req: CryptoRequest):
-    return {
-        "success": True,
-        "pay_url": "https://t.me/CryptoBot?start=test"
-    }
+    with sqlite3.connect("vpn_users.db") as conn:
+        cursor = conn.cursor()
+        cursor.execute("INSERT INTO transactions (tg_id, amount, description, date) VALUES (?, ?, ?, ?)", 
+                       (req.tg_id, req.amount, req.description, datetime.now().strftime("%Y-%m-%d %H:%M")))
+        new_exp = (datetime.now() + timedelta(days=30)).strftime("%Y-%m-%d %H:%M:%S")
+        cursor.execute("""
+            INSERT INTO subscriptions (tg_id, expires_at, status) VALUES (?, ?, 'active')
+            ON CONFLICT(tg_id) DO UPDATE SET expires_at=excluded.expires_at, status='active'
+        """, (req.tg_id, new_exp))
+        conn.commit()
+    return {"success": True, "pay_url": "https://t.me/CryptoBot?start=test"}
 
 @app.post("/yookassa-webhook")
 async def yookassa_webhook(data: dict):
@@ -325,12 +399,11 @@ async def yookassa_webhook(data: dict):
         tg_id = metadata.get("tg_id")
         payment_method = payment_object.get("payment_method", {})
         payment_token = payment_method.get("id")
-        
         if tg_id and payment_token:
             with sqlite3.connect("vpn_users.db") as conn:
                 cursor = conn.cursor()
                 cursor.execute("""
-                    UPDATE subscriptions SET payment_token = ? WHERE tg_id = ?
+                    UPDATE subscriptions SET payment_token = ?, card_last4 = '4242' WHERE tg_id = ?
                 """, (payment_token, str(tg_id)))
                 conn.commit()
     return {"status": "ok"}
@@ -370,6 +443,8 @@ def process_auto_renewals():
             if success:
                 new_exp = (datetime.now() + timedelta(days=30)).strftime("%Y-%m-%d %H:%M:%S")
                 cursor.execute("UPDATE subscriptions SET expires_at = ? WHERE tg_id = ?", (new_exp, tg_id))
+                cursor.execute("INSERT INTO transactions (tg_id, amount, description, date) VALUES (?, 199.0, ?, ?)",
+                               (tg_id, "Автопродление подписки", datetime.now().strftime("%Y-%m-%d %H:%M")))
                 conn.commit()
 
 scheduler = BackgroundScheduler()
@@ -426,11 +501,13 @@ def admin_withdrawal_action(req: WithdrawalAction):
 class AdminPromoCreate(BaseModel):
     code: str
     discount_percent: int
+    bonus_days: int = 3
 
 @app.post("/admin/create-promo")
 def admin_create_promo(req: AdminPromoCreate):
     with sqlite3.connect("vpn_users.db") as conn:
         cursor = conn.cursor()
-        cursor.execute("INSERT OR REPLACE INTO promocodes (code, discount_percent) VALUES (?, ?)", (req.code.strip().upper(), req.discount_percent))
+        cursor.execute("INSERT OR REPLACE INTO promocodes (code, discount_percent, bonus_days) VALUES (?, ?, ?)", 
+                       (req.code.strip().upper(), req.discount_percent, req.bonus_days))
         conn.commit()
     return {"success": True, "message": "Промокод успешно создан"}

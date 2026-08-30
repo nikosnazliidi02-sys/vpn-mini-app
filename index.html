@@ -111,6 +111,7 @@
         .btn-white { background: var(--text-main); color: var(--text-dark); }
         .btn-dark { background: rgba(255,255,255,0.08); color: var(--text-main); border: 1px solid rgba(255,255,255,0.06); }
         .btn-outline { background: transparent; border: 1px solid var(--primary); color: var(--primary); }
+        .btn-danger { background: rgba(239, 68, 68, 0.15); color: var(--danger); border: 1px solid rgba(239, 68, 68, 0.3); }
 
         /* --- TOAST NOTIFICATIONS --- */
         .toast-container {
@@ -425,6 +426,28 @@
                 <input type="email" class="modal-input" placeholder="name@gmail.com" id="emailInput">
                 <button type="button" class="btn btn-primary" onclick="handleEmailModalAction(event)" id="emailActionBtn">Отправить код</button>
             </div>
+        </div>
+    </div>
+
+    <!-- МОДАЛЬНОЕ ОКНО ИСТОРИИ ТРАНЗАКЦИЙ -->
+    <div id="historyModal" class="modal-overlay" onclick="closeModal(event)">
+        <div class="modal-content" onclick="event.stopPropagation()" style="max-width: 380px; max-height: 80vh; overflow-y: auto;">
+            <button class="modal-close" onclick="closeModal()"><i data-lucide="x" style="width: 20px;"></i></button>
+            <h3 class="modal-title" style="margin-bottom: 16px;">История транзакций</h3>
+            <div id="transactionsListContainer" style="display: flex; flex-direction: column; gap: 10px;">
+                <div style="font-size: 13px; color: var(--text-muted); text-align: center; padding: 20px;">Загрузка...</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- МОДАЛЬНОЕ ОКНО АКТИВАЦИИ ПРОМОКОДА -->
+    <div id="promoModal" class="modal-overlay" onclick="closeModal(event)">
+        <div class="modal-content" onclick="event.stopPropagation()">
+            <button class="modal-close" onclick="closeModal()"><i data-lucide="x" style="width: 20px;"></i></button>
+            <h3 class="modal-title" style="margin-bottom: 12px; font-size: 22px;">Активация промокода</h3>
+            <p class="modal-text">Введите подарочный или бонусный код</p>
+            <input type="text" class="modal-input" placeholder="PROMO2026" id="promoInput" style="text-transform: uppercase;">
+            <button type="button" class="btn btn-primary" onclick="submitPromoCode()">Активировать</button>
         </div>
     </div>
 
@@ -954,6 +977,46 @@
             <div id="userAvatarPlaceholder" style="width: 72px; height: 72px; border-radius: 50%; background: var(--primary-transparent); color: var(--primary); font-size: 28px; font-weight: 800; display: flex; align-items: center; justify-content: center; margin: 0 auto 12px;">U</div>
             <div id="userFullName" style="font-size: 18px; font-weight: 800; margin-bottom: 4px;">Загрузка...</div>
             <div id="userTgId" style="font-size: 13px; color: var(--text-muted);">id: ...</div>
+            <div id="userLoyaltyBadge" style="display: inline-block; margin-top: 10px; background: var(--primary-transparent); color: var(--primary); font-size: 12px; font-weight: 700; padding: 4px 12px; border-radius: 100px;">Статус: Загрузка...</div>
+        </div>
+
+        <!-- РАСШИРЕННЫЕ БЛОКИ ПРОФИЛЯ -->
+        <div class="settings-section">
+            <div class="settings-section-title">Управление подпиской и оплатой</div>
+            <div class="settings-block">
+                <div class="settings-row" onclick="openHistoryModal()">
+                    <div class="settings-row-left">
+                        <div class="settings-icon"><i data-lucide="receipt" style="width: 18px;"></i></div>
+                        <div class="settings-row-title">История транзакций и покупок</div>
+                    </div>
+                    <div class="settings-action"><i data-lucide="arrow-right" style="width: 18px;"></i></div>
+                </div>
+                <div class="settings-row" onclick="openPromoModal()">
+                    <div class="settings-row-left">
+                        <div class="settings-icon"><i data-lucide="tag" style="width: 18px;"></i></div>
+                        <div class="settings-row-title">Активировать промокод</div>
+                    </div>
+                    <div class="settings-action"><i data-lucide="arrow-right" style="width: 18px;"></i></div>
+                </div>
+            </div>
+        </div>
+
+        <div class="settings-section">
+            <div class="settings-section-title">Банковская карта</div>
+            <div class="settings-block">
+                <div class="settings-row" style="cursor: default;">
+                    <div class="settings-row-left">
+                        <div class="settings-icon"><i data-lucide="credit-card" style="width: 18px;"></i></div>
+                        <div>
+                            <div class="settings-row-title">Привязанная карта</div>
+                            <div class="settings-row-subtitle" id="cardInfoSubtitle">Нет привязанных карт</div>
+                        </div>
+                    </div>
+                    <div class="settings-action" id="cardActionBtn" style="display: none;">
+                        <button class="btn btn-outline" style="padding: 6px 12px; font-size: 12px; width: auto;" onclick="unlinkUserCard()">Отвязать</button>
+                    </div>
+                </div>
+            </div>
         </div>
 
         <div class="settings-section">
@@ -975,6 +1038,20 @@
                 </div>
             </div>
         </div>
+
+        <div class="settings-section">
+            <div class="settings-section-title">Безопасность</div>
+            <div class="settings-block">
+                <div class="settings-row" onclick="revokeAllSessions()" style="color: var(--danger);">
+                    <div class="settings-row-left">
+                        <div class="settings-icon" style="background: rgba(239, 68, 68, 0.1); color: var(--danger);"><i data-lucide="shield-alert" style="width: 18px;"></i></div>
+                        <div class="settings-row-title" style="color: var(--danger);">Выйти со всех устройств</div>
+                    </div>
+                    <div class="settings-action"><i data-lucide="arrow-right" style="width: 18px; color: var(--danger);"></i></div>
+                </div>
+            </div>
+        </div>
+
         <div class="settings-section">
             <div class="settings-section-title">Способы входа</div>
             <div class="settings-block">
@@ -1300,10 +1377,130 @@
                         badge.className = "status-badge";
                         badge.innerHTML = `<i data-lucide="info" style="width: 14px; height: 14px; fill: var(--danger); color: var(--bg-base);"></i>Подписка закончилась`;
                     }
+                    
+                    // Статус лояльности
+                    if (data.loyalty_status) {
+                        document.getElementById('userLoyaltyBadge').innerText = `Статус: ${data.loyalty_status}`;
+                    }
+
+                    // Карты
+                    const cardSubtitle = document.getElementById('cardInfoSubtitle');
+                    const cardBtn = document.getElementById('cardActionBtn');
+                    if (data.subscription && data.subscription.card_last4) {
+                        cardSubtitle.innerText = `•••• •••• •••• ${data.subscription.card_last4}`;
+                        cardBtn.style.display = 'block';
+                    } else {
+                        cardSubtitle.innerText = 'Нет привязанных карт';
+                        cardBtn.style.display = 'none';
+                    }
+
                     lucide.createIcons();
                 }
             } catch (e) {
                 console.error("Не удалось загрузить профиль", e);
+            }
+        }
+
+        // Функции для новых фич профиля
+        async function openHistoryModal() {
+            if(tg?.HapticFeedback) tg.HapticFeedback.impactOccurred('light');
+            document.getElementById('historyModal').classList.add('show');
+            const container = document.getElementById('transactionsListContainer');
+            container.innerHTML = '<div style="font-size: 13px; color: var(--text-muted); text-align: center; padding: 20px;">Загрузка...</div>';
+            
+            try {
+                const response = await fetch(`${API_URL}/user-transactions/${globalTgId}`);
+                const data = await response.json();
+                if (data.success) {
+                    container.innerHTML = '';
+                    const txs = data.transactions || [];
+                    if (txs.length === 0) {
+                        container.innerHTML = '<div style="font-size: 13px; color: var(--text-muted); text-align: center; padding: 20px;">История транзакций пуста</div>';
+                        return;
+                    }
+                    txs.forEach(tx => {
+                        const row = document.createElement('div');
+                        row.style.cssText = "background: rgba(255,255,255,0.04); border-radius: 12px; padding: 12px; display: flex; justify-content: space-between; align-items: center;";
+                        row.innerHTML = `
+                            <div>
+                                <div style="font-size: 14px; font-weight: 700;">${tx.description}</div>
+                                <div style="font-size: 11px; color: var(--text-muted); margin-top: 2px;">${tx.date}</div>
+                            </div>
+                            <div style="font-size: 15px; font-weight: 800; color: ${tx.amount > 0 ? 'var(--success)' : 'var(--text-main);'}">${tx.amount} ₽</div>
+                        `;
+                        container.appendChild(row);
+                    });
+                }
+            } catch (e) {
+                container.innerHTML = '<div style="font-size: 13px; color: var(--danger); text-align: center; padding: 20px;">Ошибка загрузки</div>';
+            }
+        }
+
+        function openPromoModal() {
+            if(tg?.HapticFeedback) tg.HapticFeedback.impactOccurred('light');
+            document.getElementById('promoModal').classList.add('show');
+            document.getElementById('promoInput').value = '';
+        }
+
+        async function submitPromoCode() {
+            const code = document.getElementById('promoInput').value.trim();
+            if (!code) {
+                showToast('Введите промокод');
+                return;
+            }
+            if(tg?.HapticFeedback) tg.HapticFeedback.impactOccurred('medium');
+            try {
+                const response = await fetch(`${API_URL}/activate-promo`, {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ tg_id: globalTgId, code: code })
+                });
+                const result = await response.json();
+                if (response.ok && result.success) {
+                    showToast(result.message);
+                    closeModal();
+                    loadUserProfile(globalTgId);
+                } else {
+                    showToast(result.detail || "Неверный промокод");
+                }
+            } catch (e) {
+                showToast("Ошибка сети");
+            }
+        }
+
+        async function unlinkUserCard() {
+            if(tg?.HapticFeedback) tg.HapticFeedback.impactOccurred('medium');
+            if (confirm("Вы действительно хотите отвязать банковскую карту?")) {
+                try {
+                    const response = await fetch(`${API_URL}/unlink-card/${globalTgId}`, { method: "POST" });
+                    const result = await response.json();
+                    if (response.ok && result.success) {
+                        showToast("Карта успешно отвязана");
+                        loadUserProfile(globalTgId);
+                    } else {
+                        showToast("Не удалось отвязать карту");
+                    }
+                } catch (e) {
+                    showToast("Ошибка сети");
+                }
+            }
+        }
+
+        async function revokeAllSessions() {
+            if(tg?.HapticFeedback) tg.HapticFeedback.impactOccurred('heavy');
+            if (confirm("Вы уверены? Все активные ключи и устройства будут сброшены!")) {
+                try {
+                    const response = await fetch(`${API_URL}/revoke-all-devices/${globalTgId}`, { method: "POST" });
+                    const result = await response.json();
+                    if (response.ok && result.success) {
+                        showToast("Все сессии и устройства успешно сброшены");
+                        loadUserDevices(globalTgId);
+                    } else {
+                        showToast("Не удалось выполнить сброс");
+                    }
+                } catch (e) {
+                    showToast("Ошибка сети");
+                }
             }
         }
 
