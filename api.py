@@ -368,10 +368,16 @@ async def create_yookassa_invoice(req: YooKassaRequest):
     if req.promo_code:
         with sqlite3.connect("vpn_users.db") as conn:
             cursor = conn.cursor()
-            cursor.execute("SELECT discount_percent FROM promocodes WHERE code = ?", (req.promo_code.strip().upper(),))
+            code_upper = req.promo_code.strip().upper()
+            cursor.execute("SELECT discount_percent, max_uses, current_uses FROM promocodes WHERE code = ?", (code_upper,))
             row = cursor.fetchone()
             if row and row[0] > 0:
+                max_uses, current_uses = row[1], row[2]
+                if max_uses > 0 and current_uses >= max_uses:
+                    raise HTTPException(status_code=400, detail="Лимит активаций промокода исчерпан")
                 final_amount = req.amount * (1 - row[0] / 100)
+                cursor.execute("UPDATE promocodes SET current_uses = current_uses + 1 WHERE code = ?", (code_upper,))
+                conn.commit()
 
     url = "https://api.yookassa.ru/v3/payments"
     payload = {
@@ -424,10 +430,16 @@ async def create_crypto_invoice(req: CryptoRequest):
     if req.promo_code:
         with sqlite3.connect("vpn_users.db") as conn:
             cursor = conn.cursor()
-            cursor.execute("SELECT discount_percent FROM promocodes WHERE code = ?", (req.promo_code.strip().upper(),))
+            code_upper = req.promo_code.strip().upper()
+            cursor.execute("SELECT discount_percent, max_uses, current_uses FROM promocodes WHERE code = ?", (code_upper,))
             row = cursor.fetchone()
             if row and row[0] > 0:
+                max_uses, current_uses = row[1], row[2]
+                if max_uses > 0 and current_uses >= max_uses:
+                    raise HTTPException(status_code=400, detail="Лимит активаций промокода исчерпан")
                 final_amount = req.amount * (1 - row[0] / 100)
+                cursor.execute("UPDATE promocodes SET current_uses = current_uses + 1 WHERE code = ?", (code_upper,))
+                conn.commit()
 
     url = "https://pay.crypt.bot/api/createInvoice"
     headers = {"Crypto-Pay-API-Token": CRYPTO_BOT_TOKEN, "Content-Type": "application/json"}
