@@ -10,20 +10,18 @@ from apscheduler.schedulers.background import BackgroundScheduler
 
 app = FastAPI()
 
-# --- ВКЛЮЧАЕМ CORS (обязательно для связи GitHub Pages и Render) ---
+# --- ВКЛЮЧАЕМ CORS ---
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # Разрешить запросы с любых сайтов
+    allow_origins=["*"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
-# --- НАСТРОЙКИ ЮKASSA ---
 YOOKASSA_SHOP_ID = "1444358"
 YOOKASSA_SECRET_KEY = "live_7YgYIW8xKJsRDfqlSt2P-fqubRhw4Fs8eUr-R5wJYq4"
 
-# --- ИНИЦИАЛИЗАЦИЯ БАЗЫ ДАННЫХ ---
 def init_db():
     with sqlite3.connect("vpn_users.db") as conn:
         cursor = conn.cursor()
@@ -77,11 +75,25 @@ def init_db():
                 is_verified BOOLEAN DEFAULT 0
             )
         """)
+        cursor.execute("""
+            CREATE TABLE IF NOT EXISTS referrals (
+                referrer_id TEXT,
+                referred_id TEXT PRIMARY KEY
+            )
+        """)
+        cursor.execute("""
+            CREATE TABLE IF NOT EXISTS devices (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                tg_id TEXT,
+                device_name TEXT,
+                icon_type TEXT,
+                last_active TEXT
+            )
+        """)
         conn.commit()
 
 init_db()
 
-# --- ЭНДПОИНТЫ ПРОФИЛЯ, СТАТИСТИКИ И ПРИВЯЗКИ ПОЧТЫ ---
 @app.get("/user-profile/{tg_id}")
 def get_user_profile(tg_id: str):
     with sqlite3.connect("vpn_users.db") as conn:
@@ -99,17 +111,74 @@ def get_user_profile(tg_id: str):
             "status": sub[1] if sub else "inactive",
             "auto_renewal": bool(sub[2]) if sub else False
         } if sub else None,
+        "is_active": bool(sub and sub[1] == 'active'),
+        "days_left": (datetime.strptime(sub[0], "%Y-%m-%d %H:%M:%S") - datetime.now()).days if sub and sub[1] == 'active' else 0,
         "email": email_data[0] if email_data else None,
         "is_verified": bool(email_data[1]) if email_data else False
     }
 
 @app.get("/user-stats/{tg_id}")
 def get_user_stats(tg_id: str):
+    with sqlite3.connect("vpn_users.db") as conn:
+        cursor = conn.cursor()
+        cursor.execute("SELECT SUM(amount) FROM transactions WHERE tg_id = ?", (tg_id,))
+        rev = cursor.fetchone()[0]
+        balance = rev if rev else 0.0
+
+        cursor.execute("SELECT COUNT(*) FROM referrals WHERE referrer_id = ?", (tg_id,))
+        ref_count = cursor.fetchone()[0]
+
+        cursor.execute("SELECT COUNT(*) FROM devices WHERE tg_id = ?", (tg_id,))
+        active_devices = cursor.fetchone()[0] + 1  # +1 текущее устройство
+
     return {
         "success": True,
+        "balance": balance,
+        "ref_count": ref_count,
+        "total_earned": balance,
         "traffic_used": "0 MB",
-        "active_devices": 1
+        "active_devices": active_devices
     }
+
+# --- ЭНДПОИНТЫ УПРАВЛЕНИЯ УСТРОЙСТВАМИ ---
+@app.get("/devices/{tg_id}")
+def get_devices(tg_id: str):
+    with sqlite3.connect("vpn_users.db") as conn:
+        cursor = conn.cursor()
+        cursor.execute("SELECT id, device_name, icon_type, last_active FROM devices WHERE tg_id = ?", (tg_id,))
+        rows = cursor.fetchall()
+    devices = [{"id": r[0], "device_name": r[1], "icon_type": r[2], "last_active": r[3]} for r in rows]
+    return {"success": True, "devices": devices}
+
+class DeviceAddRequest(BaseModel):
+    tg_id: str
+    device_name: str
+    icon_type: str = "monitor"
+
+@app.post("/devices")
+def add_device(req: DeviceAddRequest):
+    with sqlite3.connect("vpn_users.db") as conn:
+        cursor = conn.cursor()
+        cursor.execute("SELECT COUNT(*) FROM devices WHERE tg_id = ?", (req.tg_id,))
+        count = cursor.fetchone()[0]
+        if count >= 3:
+            raise HTTPException(status_code=400, detail="Достигнут лимит устройств")
+        
+        last_active = datetime.now().strftime("сегодня, %H:%M")
+        cursor.execute("""
+            INSERT INTO devices (tg_id, device_name, icon_type, last_active)
+            VALUES (?, ?, ?, ?)
+        """, (req.tg_id, req.device_name, req.icon_type, last_active))
+        conn.commit()
+    return {"success": True}
+
+@app.delete("/devices/{device_id}")
+def delete_device(device_id: int):
+    with sqlite3.connect("vpn_users.db") as conn:
+        cursor = conn.cursor()
+        cursor.execute("DELETE FROM devices WHERE id = ?", (device_id,))
+        conn.commit()
+    return {"success": True}
 
 class EmailVerifyRequest(BaseModel):
     tg_id: str
@@ -130,6 +199,40 @@ def send_email_code(req: EmailVerifyRequest):
         conn.commit()
     
     return {"success": True, "message": "Код отправлен"}
+
+class VerifyCodeRequest(BaseModel):
+    tg_id: str
+    code: str
+
+@app.post("/verify-code")
+def verify_email_code(req: VerifyCodeRequest):
+    with sqlite3.connect("vpn_users.db") as conn:
+        cursor = conn.cursor()
+        cursor.execute("SELECT code FROM email_verifications WHERE tg_id = ?", (req.tg_id,))
+        row = cursor.fetchone()
+        if not row or row[0] != req.code:
+            raise HTTPException(status_code=400, detail="Неверный код подтверждения")
+        
+        cursor.execute("UPDATE email_verifications SET is_verified = 1 WHERE tg_id = ?", (req.tg_id,))
+        conn.commit()
+    return {"success": True}
+
+class ReferralTrackRequest(BaseModel):
+    referrer_id: str
+    referred_id: str
+
+@app.post("/track-referral")
+def track_referral(req: ReferralTrackRequest):
+    if req.referrer_id == req.referred_id:
+        return {"success": False}
+    with sqlite3.connect("vpn_users.db") as conn:
+        cursor = conn.cursor()
+        try:
+            cursor.execute("INSERT OR IGNORE INTO referrals (referrer_id, referred_id) VALUES (?, ?)", (req.referrer_id, req.referred_id))
+            conn.commit()
+        except Exception:
+            pass
+    return {"success": True}
 
 class YooKassaRequest(BaseModel):
     tg_id: str
@@ -156,7 +259,6 @@ async def create_yookassa_invoice(req: YooKassaRequest):
         }
     }
     
-    # Добавляем сохранение способа оплаты только если пользователь реально включил автопродление
     if req.auto_renewal:
         payload["save_payment_method"] = True
     
@@ -201,7 +303,6 @@ async def create_yookassa_invoice(req: YooKassaRequest):
         except Exception as e:
             raise HTTPException(status_code=500, detail=str(e))
 
-# --- ЭНДПОИНТ ДЛЯ CRYPTOBOT ---
 class CryptoRequest(BaseModel):
     tg_id: str
     amount: float
