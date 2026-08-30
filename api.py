@@ -71,7 +71,9 @@ def init_db():
             CREATE TABLE IF NOT EXISTS promocodes (
                 code TEXT PRIMARY KEY,
                 discount_percent INTEGER DEFAULT 0,
-                bonus_days INTEGER DEFAULT 0
+                bonus_days INTEGER DEFAULT 0,
+                max_uses INTEGER DEFAULT 0,
+                current_uses INTEGER DEFAULT 0
             )
         """)
         cursor.execute("""
@@ -184,13 +186,15 @@ def activate_promo(req: PromoActivateRequest):
     code = req.code.strip().upper()
     with sqlite3.connect("vpn_users.db") as conn:
         cursor = conn.cursor()
-        cursor.execute("SELECT discount_percent, bonus_days FROM promocodes WHERE code = ?", (code,))
+        cursor.execute("SELECT discount_percent, bonus_days, max_uses, current_uses FROM promocodes WHERE code = ?", (code,))
         promo = cursor.fetchone()
         if not promo:
             raise HTTPException(status_code=400, detail="Промокод не найден или недействителен")
         
-        discount_percent = promo[0] if promo[0] is not None else 0
-        bonus_days = promo[1] if promo[1] is not None else 0
+        discount_percent, bonus_days, max_uses, current_uses = promo[0], promo[1], promo[2], promo[3]
+        
+        if max_uses > 0 and current_uses >= max_uses:
+            raise HTTPException(status_code=400, detail="Лимит активаций этого промокода исчерпан")
         
         if discount_percent > 0 and bonus_days == 0:
             raise HTTPException(status_code=400, detail="Этот промокод дает скидку при оплате, введите его в окне оплаты")
@@ -216,6 +220,8 @@ def activate_promo(req: PromoActivateRequest):
             ON CONFLICT(tg_id) DO UPDATE SET expires_at = ?, status = 'active'
         """, (req.tg_id, new_exp, new_exp))
         
+        cursor.execute("UPDATE promocodes SET current_uses = current_uses + 1 WHERE code = ?", (code,))
+        
         cursor.execute("INSERT INTO transactions (tg_id, amount, description, date) VALUES (?, 0, ?, ?)",
                        (req.tg_id, f"Активация промокода: {code} (+{bonus_days} дн.)", datetime.now().strftime("%Y-%m-%d %H:%M")))
         conn.commit()
@@ -229,10 +235,15 @@ def check_promo(req: CheckPromoRequest):
     code = req.code.strip().upper()
     with sqlite3.connect("vpn_users.db") as conn:
         cursor = conn.cursor()
-        cursor.execute("SELECT discount_percent, bonus_days FROM promocodes WHERE code = ?", (code,))
+        cursor.execute("SELECT discount_percent, bonus_days, max_uses, current_uses FROM promocodes WHERE code = ?", (code,))
         row = cursor.fetchone()
         if not row:
             raise HTTPException(status_code=400, detail="Промокод не найден")
+        
+        max_uses, current_uses = row[2], row[3]
+        if max_uses > 0 and current_uses >= max_uses:
+            raise HTTPException(status_code=400, detail="Лимит активаций промокода исчерпан")
+            
     return {"success": True, "discount_percent": row[0], "bonus_days": row[1]}
 
 @app.post("/unlink-card/{tg_id}")
@@ -571,12 +582,15 @@ class AdminPromoCreate(BaseModel):
     code: str
     discount_percent: int = 0
     bonus_days: int = 0
+    max_uses: int = 0
 
 @app.post("/admin/create-promo")
 def admin_create_promo(req: AdminPromoCreate):
     with sqlite3.connect("vpn_users.db") as conn:
         cursor = conn.cursor()
-        cursor.execute("INSERT OR REPLACE INTO promocodes (code, discount_percent, bonus_days) VALUES (?, ?, ?)", 
-                       (req.code.strip().upper(), req.discount_percent, req.bonus_days))
+        cursor.execute("""
+            INSERT OR REPLACE INTO promocodes (code, discount_percent, bonus_days, max_uses, current_uses) 
+            VALUES (?, ?, ?, ?, 0)
+        """, (req.code.strip().upper(), req.discount_percent, req.bonus_days, req.max_uses))
         conn.commit()
     return {"success": True, "message": "Промокод успешно создан"}

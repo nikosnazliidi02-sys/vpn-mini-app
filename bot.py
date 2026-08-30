@@ -191,9 +191,12 @@ def handle_query(call):
         msg = bot.send_message(
             call.message.chat.id, 
             "🎟 <b>Создание промокода:</b>\n\n"
-            "Отправьте данные в одном из форматов:\n"
-            "• <b>Для дней подписки:</b> <code>КОД ДНИ</code> (например: <code>FREE3 3</code> или <code>MONTH30 30</code>)\n"
-            "• <b>Для скидки в %:</b> <code>КОД СКИДКА%</code> (например: <code>SALE20 20%</code>)", 
+            "Отправьте данные в формате:\n"
+            "<code>КОД ЗНАЧЕНИЕ [ЛИМИТ_АКТИВАЦИЙ]</code>\n\n"
+            "Примеры:\n"
+            "• <code>FREE3 3 10</code> (3 дня, на 10 активаций)\n"
+            "• <code>SALE20 20% 50</code> (скидка 20%, на 50 активаций)\n"
+            "• <code>VIPMONTH 30</code> (30 дней, без лимита)", 
             parse_mode="HTML"
         )
         bot.register_next_step_handler(msg, process_create_promo)
@@ -218,12 +221,14 @@ def handle_query(call):
 def process_create_promo(message):
     if str(message.from_user.id) != ADMIN_ID: return
     parts = message.text.split()
-    if len(parts) != 2:
-        bot.send_message(message.chat.id, "⚠️ Неверный формат. Используйте: <code>КОД ДНИ</code> или <code>КОД СКИДКА%</code>", parse_mode="HTML")
+    if len(parts) < 2:
+        bot.send_message(message.chat.id, "⚠️ Неверный формат. Используйте: <code>КОД ЗНАЧЕНИЕ [ЛИМИТ]</code>", parse_mode="HTML")
         return
     
     code = parts[0]
     val_str = parts[1]
+    max_uses = int(parts[2]) if len(parts) > 2 else 0
+    
     try:
         if '%' in val_str:
             discount = int(val_str.replace('%', ''))
@@ -236,11 +241,12 @@ def process_create_promo(message):
 
         r = httpx.post(
             f"{API_URL}/admin/create-promo", 
-            json={"code": code, "discount_percent": discount, "bonus_days": days}, 
+            json={"code": code, "discount_percent": discount, "bonus_days": days, "max_uses": max_uses}, 
             timeout=10.0
         )
         if r.json().get("success"):
-            bot.send_message(message.chat.id, f"✅ Промокод <b>{code.upper()}</b> на <b>{msg_desc}</b> успешно создан!")
+            limit_str = f" на {max_uses} активаций" if max_uses > 0 else " (без лимита)"
+            bot.send_message(message.chat.id, f"✅ Промокод <b>{code.upper()}</b> на <b>{msg_desc}</b>{limit_str} успешно создан!")
         else:
             bot.send_message(message.chat.id, "Ошибка создания промокода на сервере.")
     except ValueError:
