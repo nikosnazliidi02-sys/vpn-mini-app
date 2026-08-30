@@ -451,8 +451,11 @@ async def create_crypto_invoice(req: CryptoRequest):
                     
                 return {"success": True, "pay_url": pay_url}
             else:
-                raise HTTPException(status_code=400, detail=result.get("error", {}).get("message", "Ошибка создания счета в CryptoBot"))
+                err_msg = result.get("error", {}).get("message", "Ошибка создания счета в CryptoBot")
+                raise HTTPException(status_code=400, detail=err_msg)
         except Exception as e:
+            if isinstance(e, HTTPException):
+                raise e
             raise HTTPException(status_code=500, detail=str(e))
 
 @app.post("/yookassa-webhook")
