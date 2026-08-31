@@ -268,6 +268,7 @@
         
         .tariff-cards { 
             display: flex; 
+            flex-wrap: nowrap;
             gap: 12px; 
             margin-bottom: 24px; 
             overflow-x: auto; 
@@ -1122,13 +1123,6 @@
         <div class="settings-section">
             <div class="settings-section-title">Аккаунт</div>
             <div class="settings-block">
-                <div class="settings-row" onclick="switchTab('notifications')">
-                    <div class="settings-row-left">
-                        <div class="settings-icon"><i data-lucide="bell" style="width: 18px;"></i></div>
-                        <div class="settings-row-title">Уведомления</div>
-                    </div>
-                    <div class="settings-action"><i data-lucide="arrow-right" style="width: 18px;"></i></div>
-                </div>
                 <div class="settings-row" onclick="switchTab('devices')">
                     <div class="settings-row-left">
                         <div class="settings-icon"><i data-lucide="monitor" style="width: 18px;"></i></div>
@@ -1148,13 +1142,6 @@
                         <div><div class="settings-row-title">Email</div><div class="settings-row-subtitle" id="emailSubtitle">Не привязан</div></div>
                     </div>
                     <div class="settings-action primary" id="emailAction">Привязать</div>
-                </div>
-                <div class="settings-row">
-                    <div class="settings-row-left">
-                        <div class="settings-icon" style="background:transparent; color: var(--text-main);"><i data-lucide="send" style="width: 24px; fill: var(--text-main);"></i></div>
-                        <div><div class="settings-row-title">Telegram</div><div class="settings-row-subtitle">Подключено</div></div>
-                    </div>
-                    <div class="settings-action"><div class="check-circle"><i data-lucide="check" style="width: 14px;"></i></div></div>
                 </div>
             </div>
         </div>
